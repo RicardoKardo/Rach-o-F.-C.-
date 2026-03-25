@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from './lib/supabase.js'
 
 const ADMIN_PIN = "1234";
 
@@ -41,15 +42,106 @@ const TEAM_COLORS = [
 const GROUP_EMOJIS = ["⚽","🏆","🥇","🔥","⭐","🎯","🦁","🐯","🦊","🐺"];
 
 // ── Storage ──────────────────────────────────────────────────────────────────
-async function load(key) {
-  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; }
-  catch { return null; }
+// ── Storage (Supabase) ─────────────────────────────────────────────────────────
+
+async function loadGroups() {
+  const { data, error } = await supabase
+    .from('groups')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) return []
+  return data
 }
-async function save(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+
+async function saveGroup(group) {
+  const { error } = await supabase
+    .from('groups')
+    .upsert(group, { onConflict: 'id' })
+  if (error) console.error('Erro ao salvar grupo:', error)
 }
-async function del(key) {
-  try { localStorage.removeItem(key); } catch {}
+
+async function deleteGroupById(id) {
+  const { error } = await supabase
+    .from('groups')
+    .delete()
+    .eq('id', id)
+  if (error) console.error('Erro ao deletar grupo:', error)
+}
+
+async function loadPlayers(groupId) {
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('group_id', groupId)
+  if (error) return []
+  return data
+}
+
+async function savePlayer(player, groupId) {
+  const { error } = await supabase
+    .from('players')
+    .upsert({ ...player, group_id: groupId }, { onConflict: 'id' })
+  if (error) console.error('Erro ao salvar jogador:', error)
+}
+
+async function deletePlayerById(id) {
+  const { error } = await supabase
+    .from('players')
+    .delete()
+    .eq('id', id)
+  if (error) console.error('Erro ao deletar jogador:', error)
+}
+
+async function loadWeekPlayers(groupId) {
+  const today = new Date().toISOString().split('T')[0]
+  const { data, error } = await supabase
+    .from('week_players')
+    .select('*')
+    .eq('group_id', groupId)
+    .eq('week_date', today)
+  if (error) return { line: [], gk: [] }
+  
+  const line = data.filter(p => !p.is_goalkeeper)
+  const gk = data.filter(p => p.is_goalkeeper)
+  return { line, gk }
+}
+
+async function saveWeekPlayers(groupId, linePlayers, gkPlayers) {
+  const today = new Date().toISOString().split('T')[0]
+  
+  await supabase
+    .from('week_players')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('week_date', today)
+  
+  const allPlayers = [
+    ...linePlayers.map(p => ({
+      id: `${groupId}_${p.id}_${today}`,
+      group_id: groupId,
+      player_id: p.id,
+      player_name: p.name,
+      week_date: today,
+      is_goalkeeper: false,
+      is_avulso: p.avulso || false
+    })),
+    ...gkPlayers.map(p => ({
+      id: `${groupId}_${p.id}_${today}`,
+      group_id: groupId,
+      player_id: p.id,
+      player_name: p.name,
+      week_date: today,
+      is_goalkeeper: true,
+      is_avulso: p.avulso || false
+    }))
+  ]
+  
+  if (allPlayers.length > 0) {
+    const { error } = await supabase
+      .from('week_players')
+      .insert(allPlayers)
+    if (error) console.error('Erro ao salvar lista da semana:', error)
+  }
 }
 
 // ── Name utils ───────────────────────────────────────────────────────────────
@@ -527,25 +619,32 @@ function GroupApp({ group, onBack, notify }) {
   const [parsed,      setParsed]      = useState(null);
   const [pasteOpen,   setPasteOpen]   = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const p  = await load(`rc4_players_${gid}`);
-        const wl = await load(`rc4_weekline_${gid}`);
-        const wg = await load(`rc4_weekgk_${gid}`);
-        if (p)  setPlayers(p);
-        if (wl) setWeekLine(wl);
-        if (wg) setWeekGK(wg);
-      } catch (e) {}
-      finally { setLoading(false); }
-    })();
-  }, [gid]);
+useEffect(() => {
+  (async () => {
+    try {
+      const playersData = await loadPlayers(gid);
+      const weekData = await loadWeekPlayers(gid);
+      setPlayers(playersData);
+      setWeekLine(weekData.line);
+      setWeekGK(weekData.gk);
+    } catch (e) {
+      console.error('Erro ao carregar dados:', e);
+    }
+    finally { setLoading(false); }
+  })();
+}, [gid]);
 
-  useEffect(() => {
-    if (!loading) { save(`rc4_players_${gid}`, players); onBack(players.length, gid); }
-  }, [players, loading]);
-  useEffect(() => { if (!loading) save(`rc4_weekline_${gid}`, weekLine); }, [weekLine, loading]);
-  useEffect(() => { if (!loading) save(`rc4_weekgk_${gid}`,   weekGK);  }, [weekGK,  loading]);
+useEffect(() => {
+  if (!loading) {
+    players.forEach(p => savePlayer(p, gid));
+  }
+}, [players, loading, gid]);
+
+useEffect(() => {
+  if (!loading) {
+    saveWeekPlayers(gid, weekLine, weekGK);
+  }
+}, [weekLine, weekGK, loading, gid]);
 
   const emptyForm = () => ({ name:"", isGoalkeeper:false, positions:[], foot:"direita", side:"ambos", fisico:2, defensivo:2, ofensivo:2, aliases:[] });
   const openAdd  = () => { setEditId(null); setForm(emptyForm()); setAliasInput(""); };
@@ -1114,6 +1213,7 @@ function GroupApp({ group, onBack, notify }) {
 }
 
 // ── Root ──────────────────────────────────────────────────────────────────────
+// ── Root ──────────────────────────────────────────────────────────────────────
 export default function RachaoFC() {
   const [unlocked,     setUnlocked]     = useState(false);
   const [groups,       setGroups]       = useState([]);
@@ -1124,13 +1224,14 @@ export default function RachaoFC() {
 
   useEffect(() => {
     (async () => {
-      try { const g = await load("rc4_groups"); if (g) setGroups(g); }
+      try { 
+        const g = await loadGroups(); 
+        if (g) setGroups(g); 
+      }
       catch (e) {}
       finally { setLoadingRoot(false); }
     })();
   }, []);
-
-  useEffect(() => { if (!loadingRoot) save("rc4_groups", groups); }, [groups, loadingRoot]);
 
   const notify = (msg, type="ok") => {
     clearTimeout(toastT.current);
@@ -1138,15 +1239,21 @@ export default function RachaoFC() {
     toastT.current = setTimeout(() => setToast(null), 2600);
   };
 
-  const createGroup = g => { setGroups(gs => [...gs, {...g, playerCount:0}]); notify(`${g.emoji} ${g.name} criado!`); };
-  const deleteGroup = async id => {
-    await del(`rc4_players_${id}`);
-    await del(`rc4_weekline_${id}`);
-    await del(`rc4_weekgk_${id}`);
-    setGroups(gs => gs.filter(g => g.id!==id));
+  const createGroup = async (g) => { 
+    const newGroup = { ...g, playerCount: 0 };
+    await saveGroup(newGroup);
+    setGroups(gs => [...gs, newGroup]); 
+    notify(`${g.emoji} ${g.name} criado!`); 
+  };
+
+  const deleteGroup = async (id) => {
+    await deleteGroupById(id);
+    setGroups(gs => gs.filter(g => g.id !== id));
     notify("Rachão removido");
   };
-  const handleBack = (count, gid, goBack=false) => {
+
+  const handleBack = async (count, gid, goBack=false) => {
+    await saveGroup({ id: gid, playerCount: count });
     setGroups(gs => gs.map(g => g.id===gid ? {...g, playerCount:count} : g));
     if (goBack) setActiveGroup(null);
   };
