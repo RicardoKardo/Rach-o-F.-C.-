@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase } from './lib/supabase.js'
+import { supabase } from './lib/supabase.js';
 
 const ADMIN_PIN = "1234";
 
@@ -12,25 +12,19 @@ const POSITIONS_LINE = [
 const POSITION_GK = { id: "goleiro", label: "Goleiro", short: "GL", color: "#FFD700", emoji: "🧤" };
 const ALL_POS = [POSITION_GK, ...POSITIONS_LINE];
 const POS = Object.fromEntries(ALL_POS.map(p => [p.id, p]));
+
 const FORMATIONS = {
   5: ["fixo","ala","ala","meia","pivo"],
   6: ["fixo","fixo","ala","ala","meia","pivo"],
 };
 const PITCH_SLOTS = {
   5: [
-    { pos:"pivo", x:50, y:16 },
-    { pos:"ala",  x:14, y:36 },
-    { pos:"ala",  x:86, y:36 },
-    { pos:"meia", x:50, y:55 },
-    { pos:"fixo", x:50, y:74 },
+    { pos:"pivo", x:50, y:16 }, { pos:"ala", x:14, y:36 }, { pos:"ala", x:86, y:36 },
+    { pos:"meia", x:50, y:55 }, { pos:"fixo", x:50, y:74 },
   ],
   6: [
-    { pos:"pivo", x:50, y:14 },
-    { pos:"ala",  x:14, y:33 },
-    { pos:"ala",  x:86, y:33 },
-    { pos:"meia", x:50, y:52 },
-    { pos:"fixo", x:26, y:72 },
-    { pos:"fixo", x:74, y:72 },
+    { pos:"pivo", x:50, y:14 }, { pos:"ala", x:14, y:33 }, { pos:"ala", x:86, y:33 },
+    { pos:"meia", x:50, y:52 }, { pos:"fixo", x:26, y:72 }, { pos:"fixo", x:74, y:72 },
   ],
 };
 const TEAM_COLORS = [
@@ -40,32 +34,61 @@ const TEAM_COLORS = [
   { name:"Azul",     bg:"#1e3a8a", text:"#fff",    accent:"#1d4ed8", gkBg:"#1e3a8a" },
 ];
 const GROUP_EMOJIS = ["⚽","🏆","🥇","🔥","⭐","🎯","🦁","🐯","🦊","🐺"];
+const FONT = "'Barlow Condensed', Arial Narrow, Arial, sans-serif";
 
-// ── Storage ──────────────────────────────────────────────────────────────────
-// ── Storage (Supabase) ─────────────────────────────────────────────────────────
+// ─── Supabase helpers ─────────────────────────────────────────────────────────
+
+// Converte snake_case do banco → camelCase do app
+function dbToPlayer(p) {
+  return {
+    ...p,
+    isGoalkeeper: p.is_goalkeeper ?? false,
+    positions:    Array.isArray(p.positions) ? p.positions : [],
+    aliases:      Array.isArray(p.aliases)   ? p.aliases   : [],
+  };
+}
 
 async function loadGroups() {
   const { data, error } = await supabase
     .from('groups')
     .select('*')
-    .order('created_at', { ascending: false })
-  if (error) return []
-  return data
+    .order('created_at', { ascending: true });
+  if (error) { console.error('loadGroups:', error); return []; }
+  return data.map(g => ({
+    id:          g.id,
+    name:        g.name,
+    emoji:       g.emoji || '⚽',
+    playerCount: g.player_count || 0,
+    created_at:  g.created_at,
+  }));
 }
 
 async function saveGroup(group) {
   const { error } = await supabase
     .from('groups')
-    .upsert(group, { onConflict: 'id' })
-  if (error) console.error('Erro ao salvar grupo:', error)
+    .upsert({
+      id:    group.id,
+      name:  group.name,
+      emoji: group.emoji || '⚽',
+      player_count: group.playerCount || 0,
+    }, { onConflict: 'id' });
+  if (error) console.error('saveGroup:', error);
+}
+
+async function updateGroupPlayerCount(groupId, count) {
+  const { error } = await supabase
+    .from('groups')
+    .update({ player_count: count })
+    .eq('id', groupId);
+  if (error) console.error('updateGroupPlayerCount:', error);
 }
 
 async function deleteGroupById(id) {
   const { error } = await supabase
     .from('groups')
     .delete()
-    .eq('id', id)
-  if (error) console.error('Erro ao deletar grupo:', error)
+    .eq('id', id);
+  if (error) console.error('deleteGroupById:', error);
 }
 
 async function loadPlayers(groupId) {
@@ -73,97 +96,137 @@ async function loadPlayers(groupId) {
     .from('players')
     .select('*')
     .eq('group_id', groupId)
-  if (error) return []
-  return data
+    .order('created_at', { ascending: true });
+  if (error) { console.error('loadPlayers:', error); return []; }
+  return data.map(dbToPlayer);
 }
 
 async function savePlayer(player, groupId) {
   const { error } = await supabase
     .from('players')
-    .upsert({ ...player, group_id: groupId }, { onConflict: 'id' })
-  if (error) console.error('Erro ao salvar jogador:', error)
+    .upsert({
+      id:            player.id,
+      group_id:      groupId,
+      name:          player.name,
+      is_goalkeeper: player.isGoalkeeper || false,
+      positions:     player.positions    || [],
+      aliases:       player.aliases      || [],
+      foot:          player.foot         || 'direita',
+      side:          player.side         || 'ambos',
+      fisico:        player.fisico       || 2,
+      defensivo:     player.defensivo    || 2,
+      ofensivo:      player.ofensivo     || 2,
+    }, { onConflict: 'id' });
+  if (error) console.error('savePlayer:', error);
 }
 
 async function deletePlayerById(id) {
   const { error } = await supabase
     .from('players')
     .delete()
-    .eq('id', id)
-  if (error) console.error('Erro ao deletar jogador:', error)
+    .eq('id', id);
+  if (error) console.error('deletePlayerById:', error);
 }
 
 async function loadWeekPlayers(groupId) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0];
   const { data, error } = await supabase
     .from('week_players')
     .select('*')
     .eq('group_id', groupId)
-    .eq('week_date', today)
-  if (error) return { line: [], gk: [] }
-  
-  const line = data.filter(p => !p.is_goalkeeper)
-  const gk = data.filter(p => p.is_goalkeeper)
-  return { line, gk }
+    .eq('week_date', today);
+  if (error) { console.error('loadWeekPlayers:', error); return { line: [], gk: [] }; }
+  const line = data.filter(p => !p.is_goalkeeper).map(p => ({
+    id:          p.player_id || p.id,
+    name:        p.player_name,
+    isGoalkeeper:false,
+    avulso:      p.is_avulso,
+    positions:   p.positions || ["ala"],
+    aliases:     p.aliases   || [],
+    foot:        p.foot      || 'direita',
+    side:        p.side      || 'ambos',
+    fisico:      p.fisico    || 2,
+    defensivo:   p.defensivo || 2,
+    ofensivo:    p.ofensivo  || 2,
+  }));
+  const gk = data.filter(p => p.is_goalkeeper).map(p => ({
+    id:          p.player_id || p.id,
+    name:        p.player_name,
+    isGoalkeeper:true,
+    avulso:      p.is_avulso,
+  }));
+  return { line, gk };
 }
 
 async function saveWeekPlayers(groupId, linePlayers, gkPlayers) {
-  const today = new Date().toISOString().split('T')[0]
-  
+  const today = new Date().toISOString().split('T')[0];
+  // Apaga a lista atual do dia
   await supabase
     .from('week_players')
     .delete()
     .eq('group_id', groupId)
-    .eq('week_date', today)
-  
+    .eq('week_date', today);
+
   const allPlayers = [
-    ...linePlayers.map(p => ({
-      id: `${groupId}_${p.id}_${today}`,
-      group_id: groupId,
-      player_id: p.id,
-      player_name: p.name,
-      week_date: today,
-      is_goalkeeper: false,
-      is_avulso: p.avulso || false
+    ...linePlayers.map((p, i) => ({
+      id:           `${groupId}_line_${i}_${today}`,
+      group_id:     groupId,
+      player_id:    p.id && !p.avulso ? p.id : null,
+      player_name:  p.name,
+      week_date:    today,
+      is_goalkeeper:false,
+      is_avulso:    p.avulso || false,
+      positions:    p.positions || [],
+      fisico:       p.fisico    || 2,
+      defensivo:    p.defensivo || 2,
+      ofensivo:     p.ofensivo  || 2,
     })),
-    ...gkPlayers.map(p => ({
-      id: `${groupId}_${p.id}_${today}`,
-      group_id: groupId,
-      player_id: p.id,
-      player_name: p.name,
-      week_date: today,
-      is_goalkeeper: true,
-      is_avulso: p.avulso || false
-    }))
-  ]
-  
+    ...gkPlayers.map((p, i) => ({
+      id:           `${groupId}_gk_${i}_${today}`,
+      group_id:     groupId,
+      player_id:    p.id && !p.avulso ? p.id : null,
+      player_name:  p.name,
+      week_date:    today,
+      is_goalkeeper:true,
+      is_avulso:    p.avulso || false,
+    })),
+  ];
+
   if (allPlayers.length > 0) {
-    const { error } = await supabase
-      .from('week_players')
-      .insert(allPlayers)
-    if (error) console.error('Erro ao salvar lista da semana:', error)
+    const { error } = await supabase.from('week_players').insert(allPlayers);
+    if (error) console.error('saveWeekPlayers:', error);
   }
 }
 
-// ── Name utils ───────────────────────────────────────────────────────────────
+async function clearWeekPlayers(groupId) {
+  const today = new Date().toISOString().split('T')[0];
+  await supabase
+    .from('week_players')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('week_date', today);
+}
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
 function normName(s) {
-  return (s || "").toLowerCase().normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, "").trim();
+  return (s||"").toLowerCase().normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,"").trim();
 }
 function stripExtras(s) {
-  return s.replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
-    .replace(/[\u2600-\u27BF]/g, "").replace(/[^\w\s\u00C0-\u024F]/g, "")
-    .replace(/\s+/g, " ").trim();
+  return s.replace(/[\u{1F000}-\u{1FFFF}]/gu,"")
+    .replace(/[\u2600-\u27BF]/g,"").replace(/[^\w\s\u00C0-\u024F]/g,"")
+    .replace(/\s+/g," ").trim();
 }
 function fuzzyMatch(rawName, players) {
-  const norm = normName(rawName);
+  const norm  = normName(rawName);
   const words = norm.split(" ").filter(Boolean);
   if (!words.length) return null;
   for (const p of players) {
-    const al = (p.aliases || []).map(a => normName(a));
+    const al = (p.aliases||[]).map(a => normName(a));
     if (al.includes(norm)) return p;
   }
   for (const p of players) {
-    const al = (p.aliases || []).map(a => normName(a));
+    const al = (p.aliases||[]).map(a => normName(a));
     if (al.some(a => a.startsWith(words[0]) || words[0].startsWith(a.split(" ")[0]))) return p;
   }
   let m = players.find(p => normName(p.name) === norm);
@@ -171,10 +234,7 @@ function fuzzyMatch(rawName, players) {
   m = players.find(p => normName(p.name).split(" ")[0] === words[0]);
   if (m) return m;
   if (words.length >= 2) {
-    m = players.find(p => {
-      const pn = normName(p.name);
-      return words.every(w => w.length > 1 && pn.includes(w));
-    });
+    m = players.find(p => { const pn = normName(p.name); return words.every(w => w.length > 1 && pn.includes(w)); });
     if (m) return m;
   }
   return players.find(p => normName(p.name).startsWith(words[0])) || null;
@@ -186,7 +246,7 @@ function parseWhatsApp(text, players) {
   const lineNames = [], gkNames = [];
   for (const line of lines) {
     const plain = normName(line);
-    if (/^goleiro/.test(plain)) { mode = "gk"; continue; }
+    if (/^goleiro/.test(plain))  { mode = "gk";   continue; }
     if (/^fora/.test(plain) || /^ausente/.test(plain)) { mode = "fora"; continue; }
     if (mode === "fora") continue;
     if (mode === "line") {
@@ -206,7 +266,6 @@ function parseWhatsApp(text, players) {
   };
 }
 
-// ── Balance ──────────────────────────────────────────────────────────────────
 function playerScore(p) { return (p.fisico||1) + (p.defensivo||1) + (p.ofensivo||1); }
 
 function makeGhost(pos) {
@@ -214,10 +273,10 @@ function makeGhost(pos) {
 }
 
 function assignPositions(team, formation) {
-  const slots = [...formation];
+  const slots  = [...formation];
   const filled = new Array(slots.length).fill(false);
   const result = team.map(p => ({ ...p, assignedPos: null }));
-  const order = [...result.keys()].sort((a,b) => (result[a].positions?.length||1) - (result[b].positions?.length||1));
+  const order  = [...result.keys()].sort((a,b) => (result[a].positions?.length||1) - (result[b].positions?.length||1));
   for (const idx of order) {
     const pl = result[idx]; let done = false;
     for (let i = 0; i < slots.length; i++) {
@@ -232,20 +291,19 @@ function assignPositions(team, formation) {
 
 function balanceTeams(linePlayers, teamSize) {
   const formation = FORMATIONS[teamSize];
-  const numFull = Math.min(4, Math.floor(linePlayers.length / teamSize));
+  const numFull   = Math.min(4, Math.floor(linePlayers.length / teamSize));
   if (numFull < 2) return null;
   const pool  = linePlayers.slice(0, numFull * teamSize);
   const extra = linePlayers.slice(numFull * teamSize);
   const shuffle = a => [...a].sort(() => Math.random() - 0.5);
   let best = null, bestScore = -Infinity;
   for (let i = 0; i < 600; i++) {
-    const s = shuffle(pool);
-    const teams = Array.from({ length: numFull }, (_, k) =>
-      assignPositions(s.slice(k * teamSize, (k+1) * teamSize), formation));
-    const totals  = teams.map(t => t.reduce((a,p) => a + playerScore(p), 0));
-    const avg     = totals.reduce((a,b) => a+b, 0) / numFull;
+    const s     = shuffle(pool);
+    const teams = Array.from({ length: numFull }, (_, k) => assignPositions(s.slice(k*teamSize, (k+1)*teamSize), formation));
+    const totals   = teams.map(t => t.reduce((a,p) => a + playerScore(p), 0));
+    const avg      = totals.reduce((a,b) => a+b, 0) / numFull;
     const variance = totals.reduce((s,t) => s + Math.pow(t-avg,2), 0);
-    const posFit  = teams.reduce((a,t) => a + t.filter(p => (p.positions||[]).includes(p.assignedPos)).length, 0);
+    const posFit   = teams.reduce((a,t) => a + t.filter(p => (p.positions||[]).includes(p.assignedPos)).length, 0);
     const sc = -variance + posFit * 6;
     if (sc > bestScore) { bestScore = sc; best = teams; }
   }
@@ -257,7 +315,7 @@ function balanceTeams(linePlayers, teamSize) {
   return best;
 }
 
-// ── Shared styles ─────────────────────────────────────────────────────────────
+// ─── CSS global ───────────────────────────────────────────────────────────────
 const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&display=swap');
   * { -webkit-tap-highlight-color:transparent; box-sizing:border-box; }
@@ -268,18 +326,27 @@ const GLOBAL_CSS = `
   @keyframes pop { 0%{opacity:0;transform:translateX(-50%) scale(0.85)} 100%{opacity:1;transform:translateX(-50%) scale(1)} }
 `;
 
-// ── Small components ──────────────────────────────────────────────────────────
+// ─── Shared style helpers ─────────────────────────────────────────────────────
+const S = {
+  card: (x={}) => ({ background:"#0d160d", border:"1px solid #162616", borderRadius:12, padding:14, marginBottom:12, ...x }),
+  lbl:  (x={}) => ({ fontSize:10, color:"#3a5a3a", letterSpacing:2.5, textTransform:"uppercase", marginBottom:8, fontWeight:700, ...x }),
+  inp:  { width:"100%", background:"#0a130a", border:"1px solid #1e3a1e", color:"#e8f5e8", padding:"11px 13px", borderRadius:8, fontSize:15, outline:"none", boxSizing:"border-box", fontFamily:FONT },
+  sel:  (x={}) => ({ background:"#0a130a", border:"1px solid #1e3a1e", color:"#e8f5e8", padding:"8px 12px", borderRadius:8, fontSize:13, outline:"none", fontFamily:FONT, ...x }),
+  btnG: (x={}) => ({ background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", border:"none", borderRadius:8, padding:"12px", fontSize:14, fontWeight:800, cursor:"pointer", letterSpacing:1, textTransform:"uppercase", width:"100%", marginTop:8, boxShadow:"0 4px 16px #16a34a44", fontFamily:FONT, ...x }),
+  btnSm:(col,x={}) => ({ background:"transparent", color:col, border:`1px solid ${col}33`, borderRadius:6, padding:"4px 10px", fontSize:11, cursor:"pointer", fontWeight:700, fontFamily:FONT, ...x }),
+};
+
+// ─── Small components ─────────────────────────────────────────────────────────
 function Badge({ posId }) {
   const p = POS[posId] || { short:"?", color:"#888", emoji:"?" };
   return (
-    <span style={{ background:p.color+"22", color:p.color, border:`1px solid ${p.color}44`,
-      borderRadius:20, padding:"1px 7px", fontSize:10, fontWeight:800, letterSpacing:0.5, whiteSpace:"nowrap" }}>
+    <span style={{ background:p.color+"22", color:p.color, border:`1px solid ${p.color}44`, borderRadius:20, padding:"1px 7px", fontSize:10, fontWeight:800, letterSpacing:0.5, whiteSpace:"nowrap" }}>
       {p.emoji} {p.short}
     </span>
   );
 }
 
-function StarsDisplay({ value, color }) {
+function Stars({ value, color }) {
   return (
     <span>
       {[1,2,3].map(v => (
@@ -291,24 +358,100 @@ function StarsDisplay({ value, color }) {
 
 function Toast({ msg, type }) {
   return (
-    <div style={{
-      position:"fixed", top:14, left:"50%", transform:"translateX(-50%)",
-      background: type==="err" ? "#7f1d1d" : "#14532d", color:"#fff",
-      padding:"10px 22px", borderRadius:24, fontSize:13, fontWeight:700,
-      zIndex:200, border:`1px solid ${type==="err"?"#f87171":"#4ade80"}`,
-      boxShadow:"0 4px 24px #00000099",
-      animation:"pop .22s cubic-bezier(.34,1.56,.64,1)", whiteSpace:"nowrap",
-    }}>
+    <div style={{ position:"fixed", top:14, left:"50%", transform:"translateX(-50%)", background:type==="err"?"#7f1d1d":"#14532d", color:"#fff", padding:"10px 22px", borderRadius:24, fontSize:13, fontWeight:700, zIndex:9999, border:`1px solid ${type==="err"?"#f87171":"#4ade80"}`, boxShadow:"0 4px 24px #00000099", animation:"pop .22s cubic-bezier(.34,1.56,.64,1)", whiteSpace:"nowrap" }}>
       {msg}
     </div>
   );
 }
 
-function LoadingBall() {
+function Loader() {
   return (
-    <div style={{ minHeight:"100vh", background:"#060d06", display:"flex",
-      alignItems:"center", justifyContent:"center", fontSize:40 }}>
-      ⚽
+    <div style={{ minHeight:"100vh", background:"#060d06", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ textAlign:"center", color:"#3a5a3a", fontFamily:FONT }}>
+        <div style={{ fontSize:56, animation:"pulse 1s infinite" }}>⚽</div>
+        <div style={{ fontSize:13, marginTop:12, letterSpacing:2 }}>CARREGANDO...</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Pitch ────────────────────────────────────────────────────────────────────
+function Pitch({ team, teamSize, tc }) {
+  const slots = PITCH_SLOTS[teamSize] || PITCH_SLOTS[5];
+  const posGroups = {};
+  team.forEach(p => {
+    const ap = p.assignedPos || "fixo";
+    if (!posGroups[ap]) posGroups[ap] = [];
+    posGroups[ap].push(p);
+  });
+  return (
+    <div style={{ position:"relative", width:"100%", paddingBottom:"148%", background:"linear-gradient(175deg,#14532d 0%,#166534 48%,#14532d 100%)", borderRadius:10, overflow:"hidden" }}>
+      <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none" }} viewBox="0 0 100 148" preserveAspectRatio="none">
+        <rect x="2.5" y="2.5" width="95" height="143" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth=".8"/>
+        <line x1="2.5" y1="74" x2="97.5" y2="74" stroke="rgba(255,255,255,.22)" strokeWidth=".6"/>
+        <circle cx="50" cy="74" r="13" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth=".6"/>
+        <ellipse cx="50" cy="74" rx="2" ry="2" fill="rgba(255,255,255,.2)"/>
+        <rect x="31" y="2.5" width="38" height="13" fill="none" stroke="rgba(255,255,255,.18)" strokeWidth=".6"/>
+        <rect x="31" y="132.5" width="38" height="13" fill="none" stroke="rgba(255,255,255,.18)" strokeWidth=".6"/>
+        {[0,1,2,3,4,5,6].map(i => (
+          <rect key={i} x="2.5" y={2.5+i*20.5} width="95" height="10.2" fill={i%2===0?"rgba(255,255,255,.025)":"transparent"}/>
+        ))}
+      </svg>
+      {slots.map((slot, i) => {
+        const pGroup  = posGroups[slot.pos] || [];
+        const slotIdx = slots.filter((s,j) => j < i && s.pos === slot.pos).length;
+        const player  = pGroup[slotIdx];
+        const posData = POS[slot.pos];
+        const isGhost = player?.isGhost;
+        const total   = player && !isGhost ? playerScore(player) : 0;
+        const stars   = total >= 8 ? 3 : total >= 6 ? 2 : 1;
+        return (
+          <div key={i} style={{ position:"absolute", left:`${slot.x}%`, top:`${slot.y}%`, transform:"translate(-50%,-50%)", display:"flex", flexDirection:"column", alignItems:"center", zIndex:2 }}>
+            <div style={{ width:40, height:40, borderRadius:"50%", background:isGhost?"rgba(0,0,0,.35)":tc.accent, border:isGhost?"2px dashed rgba(255,255,255,.3)":`2.5px solid ${tc.text}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:isGhost?"rgba(255,255,255,.4)":tc.text, boxShadow:"0 2px 10px rgba(0,0,0,.6)", textAlign:"center", padding:"0 2px", lineHeight:1.15 }}>
+              {isGhost ? "?" : player ? player.name.split(" ")[0].slice(0,7) : "?"}
+            </div>
+            <div style={{ marginTop:2, background:"rgba(0,0,0,.75)", color:isGhost?"rgba(255,255,255,.3)":(posData?.color||"#fff"), fontSize:8, fontWeight:800, borderRadius:4, padding:"1px 5px", letterSpacing:.5, display:"flex", gap:3, alignItems:"center" }}>
+              <span>{posData?.short}</span>
+              {player && !isGhost && <span style={{ color:"#facc15" }}>{"★".repeat(stars)}</span>}
+            </div>
+          </div>
+        );
+      })}
+      <div style={{ position:"absolute", left:"50%", bottom:"1.5%", transform:"translateX(-50%)", display:"flex", flexDirection:"column", alignItems:"center", zIndex:2 }}>
+        <div style={{ width:36, height:36, borderRadius:"50%", background:"#78350f", border:"2px solid #fbbf2430", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, boxShadow:"0 2px 10px rgba(0,0,0,.6)" }}>🧤</div>
+        <div style={{ marginTop:2, background:"rgba(0,0,0,.75)", color:"#FFD700", fontSize:8, fontWeight:800, borderRadius:4, padding:"1px 5px" }}>GL</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PIN ──────────────────────────────────────────────────────────────────────
+function PinScreen({ onUnlock }) {
+  const [pin, setPin] = useState("");
+  const [err, setErr] = useState(false);
+
+  function press(d) {
+    const next = (pin + d).slice(0, 4);
+    setPin(next); setErr(false);
+    if (next.length === 4) {
+      if (next === ADMIN_PIN) onUnlock();
+      else { setErr(true); setTimeout(() => setPin(""), 700); }
+    }
+  }
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#060d06", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:28, fontFamily:FONT }}>
+      <style>{GLOBAL_CSS}</style>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:56 }}>⚽</div>
+        <div style={{ fontSize:32, fontWeight:900, color:"#4ade80", letterSpacing:3, marginTop:8 }}>RACHÃO FC</div>
+        <div style={{ fontSize:11, color:"#2a4a2a", letterSpacing:4, marginTop:4 }}>ÁREA DO ADMIN</div>
+      </div>
+      <div style={{ display:"flex", gap:16 }}>
+        {[0,1,2,3].map(i => (
+          <div key={i} style={{ width:16, height:16, borderRadius:"50%", background:pin.length>i?(err?"#ef4444":"#4ade80"):"#162616", border:`2px solid ${pin.length>i?(err?"#ef4444":"#4ade80"):"#1e3a1e"}`, transition:"all .15s" }}/>
+        ))}
+    ⚽
     </div>
   );
 }
