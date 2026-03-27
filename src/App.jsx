@@ -451,121 +451,12 @@ function PinScreen({ onUnlock }) {
         {[0,1,2,3].map(i => (
           <div key={i} style={{ width:16, height:16, borderRadius:"50%", background:pin.length>i?(err?"#ef4444":"#4ade80"):"#162616", border:`2px solid ${pin.length>i?(err?"#ef4444":"#4ade80"):"#1e3a1e"}`, transition:"all .15s" }}/>
         ))}
-    ⚽
-    </div>
-  );
-}
-
-// ── Pitch ─────────────────────────────────────────────────────────────────────
-function Pitch({ team, teamSize, tc }) {
-  const slots = PITCH_SLOTS[teamSize] || PITCH_SLOTS[5];
-  const posGroups = {};
-  team.forEach(p => {
-    const ap = p.assignedPos || "fixo";
-    if (!posGroups[ap]) posGroups[ap] = [];
-    posGroups[ap].push(p);
-  });
-  return (
-    <div style={{ position:"relative", width:"100%", paddingBottom:"148%",
-      background:"linear-gradient(175deg,#14532d 0%,#166534 48%,#14532d 100%)",
-      borderRadius:10, overflow:"hidden" }}>
-      <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none" }}
-        viewBox="0 0 100 148" preserveAspectRatio="none">
-        <rect x="2.5" y="2.5" width="95" height="143" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth=".8"/>
-        <line x1="2.5" y1="74" x2="97.5" y2="74" stroke="rgba(255,255,255,.22)" strokeWidth=".6"/>
-        <circle cx="50" cy="74" r="13" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth=".6"/>
-        <ellipse cx="50" cy="74" rx="2" ry="2" fill="rgba(255,255,255,.2)"/>
-        <rect x="31" y="2.5"   width="38" height="13" fill="none" stroke="rgba(255,255,255,.18)" strokeWidth=".6"/>
-        <rect x="31" y="132.5" width="38" height="13" fill="none" stroke="rgba(255,255,255,.18)" strokeWidth=".6"/>
-        {[0,1,2,3,4,5,6].map(i => (
-          <rect key={i} x="2.5" y={2.5+i*20.5} width="95" height="10.2"
-            fill={i%2===0 ? "rgba(255,255,255,.025)" : "transparent"}/>
-        ))}
-      </svg>
-      {slots.map((slot, i) => {
-        const pGroup  = posGroups[slot.pos] || [];
-        const slotIdx = slots.filter((s,j) => j < i && s.pos === slot.pos).length;
-        const player  = pGroup[slotIdx];
-        const posData = POS[slot.pos];
-        const isGhost = player?.isGhost;
-        const total   = player && !isGhost ? playerScore(player) : 0;
-        const stars   = total >= 8 ? 3 : total >= 6 ? 2 : 1;
-        return (
-          <div key={i} style={{ position:"absolute", left:`${slot.x}%`, top:`${slot.y}%`,
-            transform:"translate(-50%,-50%)", display:"flex", flexDirection:"column",
-            alignItems:"center", zIndex:2 }}>
-            <div style={{ width:40, height:40, borderRadius:"50%",
-              background: isGhost ? "rgba(0,0,0,.35)" : tc.accent,
-              border: isGhost ? "2px dashed rgba(255,255,255,.3)" : `2.5px solid ${tc.text}30`,
-              display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:10, fontWeight:900,
-              color: isGhost ? "rgba(255,255,255,.4)" : tc.text,
-              boxShadow:"0 2px 10px rgba(0,0,0,.6)", textAlign:"center",
-              padding:"0 2px", lineHeight:1.15 }}>
-              {isGhost ? "?" : player ? player.name.split(" ")[0].slice(0,7) : "?"}
-            </div>
-            <div style={{ marginTop:2, background:"rgba(0,0,0,.75)",
-              color: isGhost ? "rgba(255,255,255,.3)" : (posData?.color||"#fff"),
-              fontSize:8, fontWeight:800, borderRadius:4, padding:"1px 5px",
-              letterSpacing:.5, display:"flex", gap:3, alignItems:"center" }}>
-              <span>{posData?.short}</span>
-              {player && !isGhost && <span style={{ color:"#facc15" }}>{"★".repeat(stars)}</span>}
-            </div>
-          </div>
-        );
-      })}
-      <div style={{ position:"absolute", left:"50%", bottom:"1.5%", transform:"translateX(-50%)",
-        display:"flex", flexDirection:"column", alignItems:"center", zIndex:2 }}>
-        <div style={{ width:36, height:36, borderRadius:"50%", background:"#78350f",
-          border:"2px solid #fbbf2430", display:"flex", alignItems:"center",
-          justifyContent:"center", fontSize:16, boxShadow:"0 2px 10px rgba(0,0,0,.6)" }}>🧤</div>
-        <div style={{ marginTop:2, background:"rgba(0,0,0,.75)", color:"#FFD700",
-          fontSize:8, fontWeight:800, borderRadius:4, padding:"1px 5px" }}>GL</div>
-      </div>
-    </div>
-  );
-}
-
-// ── PIN screen ────────────────────────────────────────────────────────────────
-function PinScreen({ onUnlock }) {
-  const [pin, setPin] = useState("");
-  const [err, setErr] = useState(false);
-  const press = d => {
-    const next = (pin + d).slice(0, 4);
-    setPin(next); setErr(false);
-    if (next.length === 4) {
-      if (next === ADMIN_PIN) onUnlock();
-      else { setErr(true); setTimeout(() => setPin(""), 700); }
-    }
-  };
-  return (
-    <div style={{ minHeight:"100vh", background:"#060d06", display:"flex",
-      flexDirection:"column", alignItems:"center", justifyContent:"center",
-      gap:28, fontFamily:"'Barlow Condensed',Arial Narrow,Arial,sans-serif" }}>
-      <style>{GLOBAL_CSS}</style>
-      <div style={{ textAlign:"center" }}>
-        <div style={{ fontSize:56 }}>⚽</div>
-        <div style={{ fontSize:32, fontWeight:900, color:"#4ade80", letterSpacing:3, marginTop:8 }}>RACHÃO FC</div>
-        <div style={{ fontSize:11, color:"#2a4a2a", letterSpacing:4, marginTop:4 }}>ÁREA DO ADMIN</div>
-      </div>
-      <div style={{ display:"flex", gap:16 }}>
-        {[0,1,2,3].map(i => (
-          <div key={i} style={{ width:16, height:16, borderRadius:"50%",
-            background: pin.length>i ? (err?"#ef4444":"#4ade80") : "#162616",
-            border: `2px solid ${pin.length>i ? (err?"#ef4444":"#4ade80") : "#1e3a1e"}`,
-            transition:"all .15s" }}/>
-        ))}
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 74px)", gap:10 }}>
         {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((d,i) => (
           <button key={i}
-            onClick={() => d==="⌫" ? setPin(p=>p.slice(0,-1)) : d!=="" && press(String(d))}
-            style={{ height:74, borderRadius:12, fontSize:d==="⌫"?22:28, fontWeight:800,
-              cursor: d===""?"default":"pointer",
-              background: d===""?"transparent":"#0d160d",
-              color: d==="⌫"?"#4a6a4a":"#e8f5e8",
-              border: d===""?"none":"1px solid #1a2e1a",
-              opacity: d===""?0:1, fontFamily:"inherit" }}>
+            onClick={() => { if (d==="⌫") setPin(p=>p.slice(0,-1)); else if (d!=="") press(String(d)); }}
+            style={{ height:74, borderRadius:12, fontSize:d==="⌫"?22:28, fontWeight:800, cursor:d===""?"default":"pointer", background:d===""?"transparent":"#0d160d", color:d==="⌫"?"#4a6a4a":"#e8f5e8", border:d===""?"none":"1px solid #1a2e1a", opacity:d===""?0:1, fontFamily:FONT }}>
             {d}
           </button>
         ))}
@@ -575,26 +466,22 @@ function PinScreen({ onUnlock }) {
   );
 }
 
-// ── Groups screen ─────────────────────────────────────────────────────────────
+// ─── Groups screen ────────────────────────────────────────────────────────────
 function GroupsScreen({ groups, onSelect, onCreate, onDelete, onLock }) {
   const [newName,  setNewName]  = useState("");
   const [creating, setCreating] = useState(false);
   const [emojiIdx, setEmojiIdx] = useState(0);
 
-  const handleCreate = () => {
+  function handleCreate() {
     if (!newName.trim()) return;
     onCreate({ name: newName.trim(), emoji: GROUP_EMOJIS[emojiIdx], id: Date.now().toString() });
     setNewName(""); setCreating(false);
-  };
+  }
 
   return (
-    <div style={{ minHeight:"100vh", background:"#060d06",
-      fontFamily:"'Barlow Condensed',Arial Narrow,Arial,sans-serif",
-      color:"#e8f5e8", maxWidth:480, margin:"0 auto", paddingBottom:40 }}>
+    <div style={{ minHeight:"100vh", background:"#060d06", fontFamily:FONT, color:"#e8f5e8", maxWidth:480, margin:"0 auto", paddingBottom:40 }}>
       <style>{GLOBAL_CSS}</style>
-      <div style={{ background:"linear-gradient(160deg,#0b1e0b,#060d06)",
-        borderBottom:"1px solid #162616", padding:"14px 16px 10px",
-        display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+      <div style={{ background:"linear-gradient(160deg,#0b1e0b,#060d06)", borderBottom:"1px solid #162616", padding:"14px 16px 10px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ fontSize:24 }}>⚽</span>
           <div>
@@ -602,94 +489,46 @@ function GroupsScreen({ groups, onSelect, onCreate, onDelete, onLock }) {
             <div style={{ fontSize:10, color:"#2e4e2e", letterSpacing:3 }}>MEUS RACHÕES</div>
           </div>
         </div>
-        <button onClick={onLock} style={{ background:"transparent", color:"#2e4e2e",
-          border:"1px solid #162616", borderRadius:6, padding:"5px 10px",
-          fontSize:11, cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>
-          SAIR
-        </button>
+        <button onClick={onLock} style={{ background:"transparent", color:"#2e4e2e", border:"1px solid #162616", borderRadius:6, padding:"5px 10px", fontSize:11, cursor:"pointer", fontWeight:700, fontFamily:FONT }}>SAIR</button>
       </div>
-
       <div style={{ padding:16 }}>
         {groups.length === 0 && !creating && (
           <div style={{ textAlign:"center", padding:"50px 20px", color:"#1e2e1e" }}>
             <div style={{ fontSize:56, marginBottom:12 }}>🏟️</div>
             <div style={{ fontSize:18, fontWeight:800, color:"#2e4e2e" }}>Nenhum rachão ainda</div>
-            <div style={{ fontSize:13, marginTop:6 }}>Crie seu primeiro grupo abaixo</div>
+            <div style={{ fontSize:13, color:"#1e2e1e", marginTop:6 }}>Crie seu primeiro grupo abaixo</div>
           </div>
         )}
-
         {groups.map(g => (
-          <div key={g.id} style={{ background:"#0d160d", border:"1px solid #162616",
-            borderRadius:12, padding:"14px 16px", marginBottom:10,
-            display:"flex", alignItems:"center", gap:14 }}>
+          <div key={g.id} style={{ background:"#0d160d", border:"1px solid #162616", borderRadius:12, padding:"14px 16px", marginBottom:10, display:"flex", alignItems:"center", gap:14 }}>
             <div style={{ fontSize:36 }}>{g.emoji||"⚽"}</div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:18, fontWeight:900, color:"#e8f5e8", letterSpacing:1 }}>{g.name}</div>
               <div style={{ fontSize:11, color:"#3a5a3a", marginTop:2 }}>{g.playerCount||0} atletas cadastrados</div>
             </div>
             <div style={{ display:"flex", gap:6 }}>
-              <button onClick={() => onSelect(g)}
-                style={{ background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff",
-                  border:"none", borderRadius:8, padding:"10px 16px", fontSize:13,
-                  fontWeight:900, cursor:"pointer", fontFamily:"inherit", letterSpacing:1 }}>
-                ENTRAR →
-              </button>
-              <button onClick={() => onDelete(g.id)}
-                style={{ background:"transparent", color:"#ef4444",
-                  border:"1px solid #ef444433", borderRadius:8, padding:"10px",
-                  fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>
-                ✕
-              </button>
+              <button onClick={() => onSelect(g)} style={{ background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", border:"none", borderRadius:8, padding:"10px 16px", fontSize:13, fontWeight:900, cursor:"pointer", fontFamily:FONT, letterSpacing:1 }}>ENTRAR →</button>
+              <button onClick={() => onDelete(g.id)} style={{ background:"transparent", color:"#ef4444", border:"1px solid #ef444433", borderRadius:8, padding:"10px", fontSize:12, cursor:"pointer", fontFamily:FONT }}>✕</button>
             </div>
           </div>
         ))}
-
         {creating ? (
-          <div style={{ background:"#0d160d", border:"1px solid #1e4a3a",
-            borderRadius:12, padding:16, marginTop:8 }}>
-            <div style={{ fontSize:10, color:"#3a5a3a", letterSpacing:2.5,
-              fontWeight:700, marginBottom:10 }}>NOVO RACHÃO</div>
+          <div style={S.card({ border:"1px solid #1e4a3a", marginTop:8 })}>
+            <div style={S.lbl()}>NOVO RACHÃO</div>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
               {GROUP_EMOJIS.map((e,i) => (
-                <button key={e} onClick={() => setEmojiIdx(i)}
-                  style={{ fontSize:24, background: emojiIdx===i?"#1a3a2a":"transparent",
-                    border: emojiIdx===i?"1px solid #4ade80":"1px solid #162616",
-                    borderRadius:8, padding:"6px 10px", cursor:"pointer" }}>
-                  {e}
-                </button>
+                <button key={e} onClick={() => setEmojiIdx(i)} style={{ fontSize:24, background:emojiIdx===i?"#1a3a2a":"transparent", border:emojiIdx===i?"1px solid #4ade80":"1px solid #162616", borderRadius:8, padding:"6px 10px", cursor:"pointer" }}>{e}</button>
               ))}
             </div>
-            <input
-              autoFocus
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => e.key==="Enter" && handleCreate()}
-              placeholder="Nome do rachão... ex: Rachão do Zé"
-              style={{ width:"100%", background:"#0a130a", border:"1px solid #1e3a1e",
-                color:"#e8f5e8", padding:"11px 13px", borderRadius:8, fontSize:16,
-                outline:"none", boxSizing:"border-box", fontFamily:"inherit", marginBottom:10 }}
-            />
+            <input style={{ ...S.inp, marginBottom:10 }} placeholder="Nome do rachão..." value={newName}
+              onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key==="Enter" && handleCreate()} autoFocus/>
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={handleCreate}
-                style={{ flex:1, background:"linear-gradient(135deg,#16a34a,#15803d)",
-                  color:"#fff", border:"none", borderRadius:8, padding:"12px",
-                  fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
-                ✅ CRIAR
-              </button>
-              <button onClick={() => setCreating(false)}
-                style={{ flex:1, background:"#1f2937", color:"#e8f5e8", border:"none",
-                  borderRadius:8, padding:"12px", fontSize:14, fontWeight:800,
-                  cursor:"pointer", fontFamily:"inherit" }}>
-                CANCELAR
-              </button>
+              <button onClick={handleCreate} style={{ flex:1, background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", border:"none", borderRadius:8, padding:"12px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:FONT }}>✅ CRIAR</button>
+              <button onClick={() => setCreating(false)} style={{ flex:1, background:"#1f2937", color:"#e8f5e8", border:"none", borderRadius:8, padding:"12px", fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:FONT }}>CANCELAR</button>
             </div>
           </div>
         ) : (
-          <button onClick={() => setCreating(true)}
-            style={{ width:"100%", background:"transparent",
-              border:"1.5px dashed #1e3a1e", borderRadius:12, padding:"18px",
-              fontSize:15, fontWeight:800, cursor:"pointer", color:"#3a5a3a",
-              fontFamily:"inherit", marginTop:6, letterSpacing:1 }}>
+          <button onClick={() => setCreating(true)} style={{ width:"100%", background:"transparent", border:"1.5px dashed #1e3a1e", borderRadius:12, padding:"18px", fontSize:15, fontWeight:800, cursor:"pointer", color:"#3a5a3a", fontFamily:FONT, marginTop:6, letterSpacing:1 }}>
             + NOVO RACHÃO
           </button>
         )}
@@ -698,17 +537,14 @@ function GroupsScreen({ groups, onSelect, onCreate, onDelete, onLock }) {
   );
 }
 
-// ── Player row ────────────────────────────────────────────────────────────────
+// ─── Player row ───────────────────────────────────────────────────────────────
 function PlayerRow({ pl, onEdit, onDelete }) {
   return (
-    <div style={{ background:"#0a130a", border:"1px solid #141e14", borderRadius:10,
-      padding:"10px 12px", marginBottom:6, display:"flex", alignItems:"flex-start", gap:10 }}>
+    <div style={{ background:"#0a130a", border:"1px solid #141e14", borderRadius:10, padding:"10px 12px", marginBottom:6, display:"flex", alignItems:"flex-start", gap:10 }}>
       <div style={{ flex:1 }}>
         <div style={{ fontWeight:800, fontSize:15 }}>{pl.name}</div>
         {pl.aliases?.length > 0 && (
-          <div style={{ fontSize:10, color:"#2a4a2a", marginTop:2, fontStyle:"italic" }}>
-            aka: {pl.aliases.join(", ")}
-          </div>
+          <div style={{ fontSize:10, color:"#2a4a2a", marginTop:2, fontStyle:"italic" }}>aka: {pl.aliases.join(", ")}</div>
         )}
         <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:4 }}>
           {pl.isGoalkeeper
@@ -724,27 +560,21 @@ function PlayerRow({ pl, onEdit, onDelete }) {
         </div>
         {!pl.isGoalkeeper && (
           <div style={{ display:"flex", gap:10, marginTop:5 }}>
-            <span style={{ fontSize:11 }}>💪 <StarsDisplay value={pl.fisico} color="#f97316"/></span>
-            <span style={{ fontSize:11 }}>🛡️ <StarsDisplay value={pl.defensivo} color="#4FC3F7"/></span>
-            <span style={{ fontSize:11 }}>🎯 <StarsDisplay value={pl.ofensivo} color="#4ade80"/></span>
+            <span style={{ fontSize:11 }}>💪 <Stars value={pl.fisico} color="#f97316"/></span>
+            <span style={{ fontSize:11 }}>🛡️ <Stars value={pl.defensivo} color="#4FC3F7"/></span>
+            <span style={{ fontSize:11 }}>🎯 <Stars value={pl.ofensivo} color="#4ade80"/></span>
           </div>
         )}
       </div>
       <div style={{ display:"flex", gap:6 }}>
-        <button onClick={() => onEdit(pl)}
-          style={{ background:"transparent", color:"#facc15", border:"1px solid #facc1533",
-            borderRadius:6, padding:"4px 9px", fontSize:11, cursor:"pointer",
-            fontWeight:700, fontFamily:"inherit" }}>✏️</button>
-        <button onClick={() => onDelete(pl.id)}
-          style={{ background:"transparent", color:"#ef4444", border:"1px solid #ef444433",
-            borderRadius:6, padding:"4px 9px", fontSize:11, cursor:"pointer",
-            fontWeight:700, fontFamily:"inherit" }}>✕</button>
+        <button onClick={() => onEdit(pl)} style={{ background:"transparent", color:"#facc15", border:"1px solid #facc1533", borderRadius:6, padding:"4px 9px", fontSize:11, cursor:"pointer", fontWeight:700, fontFamily:FONT }}>✏️</button>
+        <button onClick={() => onDelete(pl.id)} style={{ background:"transparent", color:"#ef4444", border:"1px solid #ef444433", borderRadius:6, padding:"4px 9px", fontSize:11, cursor:"pointer", fontWeight:700, fontFamily:FONT }}>✕</button>
       </div>
     </div>
   );
 }
 
-// ── Group app (main per-group UI) ─────────────────────────────────────────────
+// ─── Group App ────────────────────────────────────────────────────────────────
 function GroupApp({ group, onBack, notify }) {
   const gid = group.id;
   const [players,     setPlayers]     = useState([]);
@@ -754,6 +584,7 @@ function GroupApp({ group, onBack, notify }) {
   const [assignedGKs, setAssignedGKs] = useState({});
   const [teamSize,    setTeamSize]    = useState(5);
   const [loading,     setLoading]     = useState(true);
+  const [saving,      setSaving]      = useState(false);
   const [tab,         setTab]         = useState("lista");
   const [form,        setForm]        = useState(null);
   const [editId,      setEditId]      = useState(null);
@@ -762,165 +593,128 @@ function GroupApp({ group, onBack, notify }) {
   const [parsed,      setParsed]      = useState(null);
   const [pasteOpen,   setPasteOpen]   = useState(true);
 
-useEffect(() => {
-  (async () => {
-    try {
-      const playersData = await loadPlayers(gid);
-      const weekData = await loadWeekPlayers(gid);
-      setPlayers(playersData);
-      setWeekLine(weekData.line);
-      setWeekGK(weekData.gk);
-    } catch (e) {
-      console.error('Erro ao carregar dados:', e);
-    }
-    finally { setLoading(false); }
-  })();
-}, [gid]);
-
-useEffect(() => {
-  if (!loading) {
-    players.forEach(p => savePlayer(p, gid));
-  }
-}, [players, loading, gid]);
-
-useEffect(() => {
-  if (!loading) {
-    saveWeekPlayers(gid, weekLine, weekGK);
-  }
-}, [weekLine, weekGK, loading, gid]);
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const [pl, week] = await Promise.all([
+        loadPlayers(gid),
+        loadWeekPlayers(gid),
+      ]);
+      setPlayers(pl);
+      setWeekLine(week.line);
+      setWeekGK(week.gk);
+      setPasteOpen(week.line.length === 0);
+      setLoading(false);
+    })();
+  }, [gid]);
 
   const emptyForm = () => ({ name:"", isGoalkeeper:false, positions:[], foot:"direita", side:"ambos", fisico:2, defensivo:2, ofensivo:2, aliases:[] });
   const openAdd  = () => { setEditId(null); setForm(emptyForm()); setAliasInput(""); };
   const openEdit = pl => {
     setEditId(pl.id);
-    setForm({ name:pl.name, isGoalkeeper:pl.isGoalkeeper||false, positions:[...(pl.positions||[])],
-      foot:pl.foot||"direita", side:pl.side||"ambos", fisico:pl.fisico||2,
-      defensivo:pl.defensivo||2, ofensivo:pl.ofensivo||2, aliases:[...(pl.aliases||[])] });
-    setAliasInput(""); setTab("atletas");
+    setForm({ name:pl.name, isGoalkeeper:pl.isGoalkeeper||false, positions:[...(pl.positions||[])], foot:pl.foot||"direita", side:pl.side||"ambos", fisico:pl.fisico||2, defensivo:pl.defensivo||2, ofensivo:pl.ofensivo||2, aliases:[...(pl.aliases||[])] });
+    setAliasInput("");
+    setTab("atletas");
   };
-  const addAlias    = () => { const a=aliasInput.trim(); if(!a||form.aliases.includes(a))return; setForm(f=>({...f,aliases:[...f.aliases,a]})); setAliasInput(""); };
-  const removeAlias = a  => setForm(f => ({ ...f, aliases: f.aliases.filter(x => x!==a) }));
-  const togglePos   = pos => setForm(f => ({
-    ...f, positions: f.positions.includes(pos) ? f.positions.filter(p=>p!==pos) : [...f.positions,pos]
-  }));
+  const addAlias    = () => { const a = aliasInput.trim(); if (!a || form.aliases.includes(a)) return; setForm(f => ({ ...f, aliases:[...f.aliases,a] })); setAliasInput(""); };
+  const removeAlias = a => setForm(f => ({ ...f, aliases: f.aliases.filter(x => x !== a) }));
+  const togglePos   = pos => setForm(f => ({ ...f, positions: f.positions.includes(pos) ? f.positions.filter(p => p !== pos) : [...f.positions, pos] }));
 
-  const saveForm = () => {
+  async function saveForm() {
     if (!form.name.trim()) { notify("Nome obrigatório","err"); return; }
-    if (!form.isGoalkeeper && form.positions.length===0) { notify("Selecione pelo menos uma posição","err"); return; }
-    const data = { ...form, name: form.name.trim() };
-    if (editId) { setPlayers(ps => ps.map(p => p.id===editId ? {...p,...data} : p)); notify("Atleta atualizado ✓"); }
-    else        { setPlayers(ps => [...ps, {...data, id:Date.now().toString()}]);     notify("Atleta adicionado ✓"); }
-    setForm(null); setEditId(null);
-  };
+    if (!form.isGoalkeeper && form.positions.length === 0) { notify("Selecione pelo menos uma posição","err"); return; }
+    setSaving(true);
+    const id   = editId || Date.now().toString();
+    const data = { ...form, id, name: form.name.trim() };
+    await savePlayer(data, gid);
+    const updated = editId
+      ? players.map(p => p.id === editId ? data : p)
+      : [...players, data];
+    setPlayers(updated);
+    await updateGroupPlayerCount(gid, updated.length);
+    onBack(updated.length, gid);
+    notify(editId ? "Atleta atualizado ✓" : "Atleta adicionado ✓");
+    setForm(null); setEditId(null); setSaving(false);
+  }
 
-  const deletePlayer = id => {
-    setPlayers(ps => ps.filter(p => p.id!==id));
-    setWeekLine(wl => wl.filter(p => p.id!==id));
+  async function deletePlayer(id) {
+    await deletePlayerById(id);
+    const updated = players.filter(p => p.id !== id);
+    setPlayers(updated);
+    setWeekLine(wl => wl.filter(p => p.id !== id));
+    await updateGroupPlayerCount(gid, updated.length);
+    onBack(updated.length, gid);
     notify("Removido");
-  };
+  }
 
-  const doParse = () => {
+  function doParse() {
     if (!listText.trim()) { notify("Cole a lista primeiro","err"); return; }
     const result = parseWhatsApp(listText, players);
     if (!result.lineResult.length && !result.gkResult.length) { notify("Nenhum jogador encontrado","err"); return; }
     setParsed(result);
-  };
+  }
 
-  const confirmParsed = () => {
+  async function confirmParsed() {
     if (!parsed) return;
-    const newLine = parsed.lineResult.map(r => r.player || {
-      id:"av_"+Date.now()+Math.random(), name:r.raw, isGoalkeeper:false,
-      positions:["ala"], foot:"direita", side:"ambos", fisico:2, defensivo:2, ofensivo:2, avulso:true
-    });
-    const newGK = parsed.gkResult.map(r => r.player || {
-      id:"gkav_"+Date.now()+Math.random(), name:r.raw, isGoalkeeper:true, avulso:true
-    });
-    setWeekLine(newLine); setWeekGK(newGK); setTeams(null); setAssignedGKs({});
-    setParsed(null); setListText(""); setPasteOpen(false);
+    setSaving(true);
+    const newLine = parsed.lineResult.map(r => r.player || { id:"av_"+Date.now()+Math.random(), name:r.raw, isGoalkeeper:false, positions:["ala"], foot:"direita", side:"ambos", fisico:2, defensivo:2, ofensivo:2, avulso:true });
+    const newGK   = parsed.gkResult.map(r  => r.player || { id:"gkav_"+Date.now()+Math.random(), name:r.raw, isGoalkeeper:true, avulso:true });
+    await saveWeekPlayers(gid, newLine, newGK);
+    setWeekLine(newLine); setWeekGK(newGK);
+    setTeams(null); setAssignedGKs({});
+    setParsed(null); setListText(""); setPasteOpen(false); setSaving(false);
     notify(`✓ ${newLine.length} jogadores + ${newGK.length} goleiro${newGK.length!==1?"s":""}`);
-  };
+  }
 
-  const clearWeek = () => {
-    setWeekLine([]); setWeekGK([]); setTeams(null); setAssignedGKs({});
+  async function clearWeek() {
+    await clearWeekPlayers(gid);
+    setWeekLine([]); setWeekGK([]);
+    setTeams(null); setAssignedGKs({});
     setParsed(null); setListText(""); setPasteOpen(true);
     notify("Nova semana — lista zerada ✓");
-  };
+  }
 
-  const doSort = () => {
+  function doSort() {
     const numFull = Math.min(4, Math.floor(weekLine.length / teamSize));
     if (numFull < 2) { notify(`Precisa de pelo menos ${teamSize*2} jogadores de linha!`,"err"); return; }
     const result = balanceTeams(weekLine, teamSize);
     if (!result) { notify("Não foi possível sortear","err"); return; }
     setTeams(result); setAssignedGKs({});
     const rem = weekLine.length - numFull * teamSize;
-    notify(rem>0 && numFull<4 ? `Times sorteados! ⚽  Time ${numFull+1} incompleto (${rem}/${teamSize})` : "Times sorteados! ⚽");
-  };
+    if (rem > 0 && numFull < 4) notify(`Times sorteados! ⚽  Time ${numFull+1} incompleto (${rem}/${teamSize})`);
+    else notify("Times sorteados! ⚽");
+  }
 
-  // Style helpers
-  const card  = (x={}) => ({ background:"#0d160d", border:"1px solid #162616", borderRadius:12, padding:14, marginBottom:12, ...x });
-  const lbl   = (x={}) => ({ fontSize:10, color:"#3a5a3a", letterSpacing:2.5, textTransform:"uppercase", marginBottom:8, fontWeight:700, ...x });
-  const inp   = { width:"100%", background:"#0a130a", border:"1px solid #1e3a1e", color:"#e8f5e8",
-    padding:"11px 13px", borderRadius:8, fontSize:15, outline:"none", boxSizing:"border-box", fontFamily:"inherit" };
-  const sel   = (x={}) => ({ background:"#0a130a", border:"1px solid #1e3a1e", color:"#e8f5e8",
-    padding:"8px 12px", borderRadius:8, fontSize:13, outline:"none", fontFamily:"inherit", ...x });
-  const btnG  = (x={}) => ({ background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff",
-    border:"none", borderRadius:8, padding:"12px", fontSize:14, fontWeight:800,
-    cursor:"pointer", letterSpacing:1, textTransform:"uppercase", width:"100%",
-    marginTop:8, boxShadow:"0 4px 16px #16a34a44", fontFamily:"inherit", ...x });
-  const btnSm = (col,x={}) => ({ background:"transparent", color:col, border:`1px solid ${col}33`,
-    borderRadius:6, padding:"4px 10px", fontSize:11, cursor:"pointer", fontWeight:700, fontFamily:"inherit", ...x });
+  if (loading) return <Loader />;
 
-  if (loading) return <LoadingBall />;
+  const tabs = [
+    { id:"lista",   icon:"📋", label:"Lista",   badge: weekLine.length || null },
+    { id:"atletas", icon:"👥", label:"Atletas", badge: players.length  || null },
+    { id:"sorteio", icon:"⚽", label:"Sorteio", badge: teams ? teams.length : null },
+  ];
 
   return (
-    <div style={{ minHeight:"100vh", background:"#060d06",
-      fontFamily:"'Barlow Condensed','Arial Narrow',Arial,sans-serif",
-      color:"#e8f5e8", maxWidth:480, margin:"0 auto", paddingBottom:90 }}>
+    <div style={{ minHeight:"100vh", background:"#060d06", fontFamily:FONT, color:"#e8f5e8", maxWidth:480, margin:"0 auto", paddingBottom:90 }}>
       <style>{GLOBAL_CSS}</style>
 
       {/* Header */}
-      <div style={{ background:"linear-gradient(160deg,#0b1e0b,#060d06)",
-        borderBottom:"1px solid #162616", padding:"14px 16px 10px",
-        position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 20px #00000090",
-        display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <button onClick={() => onBack(players.length, gid, true)}
-            style={{ background:"transparent", border:"none", color:"#3a5a3a",
-              fontSize:24, cursor:"pointer", padding:"0 4px 0 0", lineHeight:1 }}>‹</button>
-          <span style={{ fontSize:22 }}>{group.emoji||"⚽"}</span>
-          <div>
-            <div style={{ fontSize:18, fontWeight:900, color:"#4ade80", letterSpacing:1 }}>
-              {group.name.toUpperCase()}
-            </div>
-            <div style={{ fontSize:10, color:"#2e4e2e", letterSpacing:3 }}>PAINEL ADMIN</div>
-          </div>
+      <div style={{ background:"linear-gradient(160deg,#0b1e0b,#060d06)", borderBottom:"1px solid #162616", padding:"14px 16px 10px", position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 20px #00000090", display:"flex", alignItems:"center", gap:10 }}>
+        <button onClick={() => onBack(players.length, gid, true)} style={{ background:"transparent", border:"none", color:"#3a5a3a", fontSize:28, cursor:"pointer", padding:"0 4px 0 0", lineHeight:1, fontFamily:FONT }}>‹</button>
+        <span style={{ fontSize:22 }}>{group.emoji||"⚽"}</span>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:18, fontWeight:900, color:"#4ade80", letterSpacing:1 }}>{group.name.toUpperCase()}</div>
+          <div style={{ fontSize:10, color:"#2e4e2e", letterSpacing:3 }}>PAINEL ADMIN</div>
         </div>
+        {saving && <div style={{ fontSize:11, color:"#3a5a3a", letterSpacing:1 }}>💾 salvando...</div>}
       </div>
 
       {/* Tabs */}
-      <div style={{ display:"flex", background:"#0a100a", borderBottom:"1px solid #162616",
-        position:"sticky", top:52, zIndex:9 }}>
-        {[
-          { id:"lista",   icon:"📋", label:"Lista",   badge: weekLine.length||null },
-          { id:"atletas", icon:"👥", label:"Atletas", badge: players.length||null },
-          { id:"sorteio", icon:"⚽", label:"Sorteio", badge: teams?teams.length:null },
-        ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ flex:1, padding:"11px 2px", fontSize:10,
-              fontWeight: tab===t.id ? 800 : 600, letterSpacing:1.2,
-              textAlign:"center", cursor:"pointer", textTransform:"uppercase",
-              color: tab===t.id?"#4ade80":"#2e4e2e",
-              background:"none", border:"none",
-              borderBottom: tab===t.id?"2px solid #4ade80":"2px solid transparent",
-              fontFamily:"inherit" }}>
+      <div style={{ display:"flex", background:"#0a100a", borderBottom:"1px solid #162616", position:"sticky", top:52, zIndex:9 }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex:1, padding:"11px 2px", fontSize:10, fontWeight:tab===t.id?800:600, letterSpacing:1.2, textAlign:"center", cursor:"pointer", textTransform:"uppercase", color:tab===t.id?"#4ade80":"#2e4e2e", background:"none", border:"none", borderBottom:tab===t.id?"2px solid #4ade80":"2px solid transparent", fontFamily:FONT }}>
             {t.icon} {t.label}
             {t.badge != null && (
-              <span style={{ marginLeft:4,
-                background: tab===t.id?"#4ade80":"#162616",
-                color: tab===t.id?"#060d06":"#2e4e2e",
-                borderRadius:10, padding:"0 5px", fontSize:9, fontWeight:900 }}>
-                {t.badge}
-              </span>
+              <span style={{ marginLeft:4, background:tab===t.id?"#4ade80":"#162616", color:tab===t.id?"#060d06":"#2e4e2e", borderRadius:10, padding:"0 5px", fontSize:9, fontWeight:900 }}>{t.badge}</span>
             )}
           </button>
         ))}
@@ -930,28 +724,20 @@ useEffect(() => {
 
         {/* ── LISTA ── */}
         {tab === "lista" && (
-          <>
+          <div>
             {weekLine.length > 0 && (
-              <div style={card()}>
+              <div style={S.card()}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
                     <span style={{ fontSize:34, fontWeight:900, color:"#4ade80" }}>{weekLine.length}</span>
                     <span style={{ fontSize:13, color:"#3a5a3a", marginLeft:8 }}>de linha</span>
-                    {weekGK.length > 0 && (
-                      <span style={{ fontSize:12, color:"#fbbf24", marginLeft:12 }}>
-                        🧤 {weekGK.length} goleiro{weekGK.length>1?"s":""}
-                      </span>
-                    )}
+                    {weekGK.length > 0 && <span style={{ fontSize:12, color:"#fbbf24", marginLeft:12 }}>🧤 {weekGK.length} goleiro{weekGK.length>1?"s":""}</span>}
                   </div>
-                  <button onClick={clearWeek} style={btnSm("#f87171",{padding:"7px 12px"})}>🔄 Nova semana</button>
+                  <button onClick={clearWeek} style={S.btnSm("#f87171", { padding:"7px 12px" })}>🔄 Nova semana</button>
                 </div>
                 <div style={{ marginTop:10, display:"flex", flexWrap:"wrap", gap:5 }}>
                   {weekLine.map((p,i) => (
-                    <div key={p.id||i} style={{ background: p.avulso?"#2a1e0a":"#0a1e0a",
-                      border:`1px solid ${p.avulso?"#d97706":"#1e4a1e"}33`,
-                      borderRadius:8, padding:"3px 9px", fontSize:12, fontWeight:700,
-                      color: p.avulso?"#d97706":"#4ade80",
-                      display:"flex", alignItems:"center", gap:4 }}>
+                    <div key={p.id||i} style={{ background:p.avulso?"#2a1e0a":"#0a1e0a", border:`1px solid ${p.avulso?"#d97706":"#1e4a1e"}33`, borderRadius:8, padding:"3px 9px", fontSize:12, fontWeight:700, color:p.avulso?"#d97706":"#4ade80", display:"flex", alignItems:"center", gap:4 }}>
                       <span style={{ fontSize:10, color:"#3a5a3a" }}>{i+1}.</span>
                       {p.name}{p.avulso && <span style={{ fontSize:9, opacity:.6 }}>av</span>}
                     </div>
@@ -961,46 +747,29 @@ useEffect(() => {
                   <div style={{ marginTop:8, paddingTop:8, borderTop:"1px solid #162616" }}>
                     <div style={{ fontSize:10, color:"#fbbf24", fontWeight:700, letterSpacing:2, marginBottom:5 }}>🧤 GOLEIROS</div>
                     <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                      {weekGK.map((p,i) => (
-                        <div key={p.id||i} style={{ background:"#1c1200", border:"1px solid #fbbf2433",
-                          borderRadius:8, padding:"3px 9px", fontSize:12, fontWeight:700, color:"#fbbf24" }}>
-                          🧤 {p.name}
-                        </div>
-                      ))}
+                      {weekGK.map((p,i) => <div key={p.id||i} style={{ background:"#1c1200", border:"1px solid #fbbf2433", borderRadius:8, padding:"3px 9px", fontSize:12, fontWeight:700, color:"#fbbf24" }}>🧤 {p.name}</div>)}
                     </div>
                   </div>
                 )}
-                {!pasteOpen && (
-                  <button onClick={() => setPasteOpen(true)}
-                    style={btnG({marginTop:10,background:"#162616",boxShadow:"none",letterSpacing:0})}>
-                    📋 Colar nova lista
-                  </button>
-                )}
+                {!pasteOpen && <button onClick={() => setPasteOpen(true)} style={S.btnG({ marginTop:10, background:"#162616", boxShadow:"none", letterSpacing:0 })}>📋 Colar nova lista</button>}
               </div>
             )}
-
             {pasteOpen && (
-              <div style={card()}>
-                <div style={lbl()}>📋 COLE A LISTA DO WHATSAPP</div>
-                <textarea
-                  style={{ ...inp, height:200, resize:"vertical", fontSize:13, lineHeight:1.6 }}
+              <div style={S.card()}>
+                <div style={S.lbl()}>📋 COLE A LISTA DO WHATSAPP</div>
+                <textarea style={{ ...S.inp, height:200, resize:"vertical", fontSize:13, lineHeight:1.6 }}
                   placeholder={"Futebol ⚽ 18/03\n1-Arthur\n2-Vinicius\n...\n\nGoleiros\nAlan\n\nFora:\nCoca"}
-                  value={listText} onChange={e => setListText(e.target.value)}
-                />
-                <button onClick={doParse} style={btnG()}>🔍 PROCESSAR LISTA</button>
+                  value={listText} onChange={e => setListText(e.target.value)}/>
+                <button onClick={doParse} style={S.btnG()}>🔍 PROCESSAR LISTA</button>
               </div>
             )}
-
             {parsed && (
-              <div style={card({border:"1px solid #1e3a1e"})}>
-                <div style={lbl()}>RESULTADO DO CRUZAMENTO</div>
+              <div style={S.card({ border:"1px solid #1e3a1e" })}>
+                <div style={S.lbl()}>RESULTADO DO CRUZAMENTO</div>
                 <div style={{ marginBottom:10 }}>
-                  <div style={{ fontSize:11, color:"#3a5a3a", marginBottom:6, fontWeight:700, letterSpacing:2 }}>
-                    👥 LINHA ({parsed.lineResult.length})
-                  </div>
+                  <div style={{ fontSize:11, color:"#3a5a3a", marginBottom:6, fontWeight:700, letterSpacing:2 }}>👥 LINHA ({parsed.lineResult.length})</div>
                   {parsed.lineResult.map((r,i) => (
-                    <div key={i} style={{ display:"flex", alignItems:"center", gap:8,
-                      padding:"6px 0", borderBottom:"1px solid #0f1e0f" }}>
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom:"1px solid #0f1e0f" }}>
                       <span style={{ fontSize:11, color:"#2a3a2a", minWidth:20 }}>{i+1}.</span>
                       <span style={{ flex:1, fontSize:13, fontWeight:700 }}>{r.raw}</span>
                       {r.matched
@@ -1012,9 +781,7 @@ useEffect(() => {
                 </div>
                 {parsed.gkResult.length > 0 && (
                   <div style={{ marginBottom:10 }}>
-                    <div style={{ fontSize:11, color:"#fbbf24", marginBottom:6, fontWeight:700, letterSpacing:2 }}>
-                      🧤 GOLEIROS ({parsed.gkResult.length})
-                    </div>
+                    <div style={{ fontSize:11, color:"#fbbf24", marginBottom:6, fontWeight:700, letterSpacing:2 }}>🧤 GOLEIROS ({parsed.gkResult.length})</div>
                     {parsed.gkResult.map((r,i) => (
                       <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 0" }}>
                         <span style={{ flex:1, fontSize:13, fontWeight:700 }}>{r.raw}</span>
@@ -1025,124 +792,96 @@ useEffect(() => {
                     ))}
                   </div>
                 )}
-                <button onClick={confirmParsed} style={btnG()}>✅ CONFIRMAR LISTA</button>
-                <button onClick={() => setParsed(null)} style={btnG({background:"#1f2937",boxShadow:"none",marginTop:6})}>CANCELAR</button>
+                <button onClick={confirmParsed} style={S.btnG()}>✅ CONFIRMAR LISTA</button>
+                <button onClick={() => setParsed(null)} style={S.btnG({ background:"#1f2937", boxShadow:"none", marginTop:6 })}>CANCELAR</button>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* ── ATLETAS ── */}
         {tab === "atletas" && (
-          <>
+          <div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-              <div style={card({flex:1,marginBottom:0,textAlign:"center",padding:"10px 6px"})}>
+              <div style={S.card({ flex:1, marginBottom:0, textAlign:"center", padding:"10px 6px" })}>
                 <div style={{ fontSize:26, fontWeight:900, color:"#4ade80" }}>{players.filter(p=>!p.isGoalkeeper).length}</div>
                 <div style={{ fontSize:10, color:"#3a5a3a" }}>JOGADORES</div>
               </div>
-              <div style={card({flex:1,marginBottom:0,textAlign:"center",padding:"10px 6px"})}>
+              <div style={S.card({ flex:1, marginBottom:0, textAlign:"center", padding:"10px 6px" })}>
                 <div style={{ fontSize:26, fontWeight:900, color:"#FFD700" }}>{players.filter(p=>p.isGoalkeeper).length}</div>
                 <div style={{ fontSize:10, color:"#3a5a3a" }}>GOLEIROS</div>
               </div>
-              <button onClick={openAdd}
-                style={{ background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff",
-                  border:"none", borderRadius:10, padding:"0 22px", fontSize:26,
-                  cursor:"pointer", fontWeight:900, boxShadow:"0 4px 16px #16a34a44" }}>+</button>
+              <button onClick={openAdd} style={{ background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", border:"none", borderRadius:10, padding:"0 22px", fontSize:26, cursor:"pointer", fontWeight:900, boxShadow:"0 4px 16px #16a34a44" }}>+</button>
             </div>
 
             {form && (
-              <div style={card({border:"1px solid #1e4a3a"})}>
-                <div style={lbl()}>{editId?"✏️ EDITAR ATLETA":"➕ NOVO ATLETA"}</div>
-                <input style={inp} placeholder="Nome do atleta..." value={form.name}
-                  onChange={e => setForm(f=>({...f,name:e.target.value}))}
+              <div style={S.card({ border:"1px solid #1e4a3a" })}>
+                <div style={S.lbl()}>{editId ? "✏️ EDITAR ATLETA" : "➕ NOVO ATLETA"}</div>
+                <input style={S.inp} placeholder="Nome do atleta..." value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   onKeyDown={e => e.key==="Enter" && saveForm()}/>
-
                 <div style={{ marginTop:10 }}>
-                  <button
-                    onClick={() => setForm(f=>({...f,isGoalkeeper:!f.isGoalkeeper,positions:[]}))}
-                    style={{ padding:"8px 16px", borderRadius:8, fontSize:13, fontWeight:800,
-                      cursor:"pointer", fontFamily:"inherit",
-                      background: form.isGoalkeeper?"#78350f":"#0d160d",
-                      color: form.isGoalkeeper?"#fbbf24":"#3a5a3a",
-                      border:`1px solid ${form.isGoalkeeper?"#fbbf2444":"#162616"}` }}>
-                    🧤 {form.isGoalkeeper?"É GOLEIRO":"Marcar como Goleiro"}
+                  <button onClick={() => setForm(f => ({ ...f, isGoalkeeper: !f.isGoalkeeper, positions: [] }))}
+                    style={{ padding:"8px 16px", borderRadius:8, fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:FONT, background:form.isGoalkeeper?"#78350f":"#0d160d", color:form.isGoalkeeper?"#fbbf24":"#3a5a3a", border:`1px solid ${form.isGoalkeeper?"#fbbf2444":"#162616"}` }}>
+                    🧤 {form.isGoalkeeper ? "É GOLEIRO" : "Marcar como Goleiro"}
                   </button>
                 </div>
-
                 {!form.isGoalkeeper && (
                   <div style={{ marginTop:12 }}>
-                    <div style={lbl({marginBottom:6})}>POSIÇÕES</div>
+                    <div style={S.lbl({ marginBottom:6 })}>POSIÇÕES</div>
                     <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                       {POSITIONS_LINE.map(p => {
                         const on = form.positions.includes(p.id);
                         return (
                           <button key={p.id} onClick={() => togglePos(p.id)}
-                            style={{ padding:"8px 14px", borderRadius:8, fontSize:12, fontWeight:800,
-                              cursor:"pointer", fontFamily:"inherit",
-                              background: on?p.color+"22":"#0d160d",
-                              color: on?p.color:"#2a3a2a",
-                              border:`1px solid ${on?p.color+"55":"#162616"}` }}>
+                            style={{ padding:"8px 14px", borderRadius:8, fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:FONT, background:on?p.color+"22":"#0d160d", color:on?p.color:"#2a3a2a", border:`1px solid ${on?p.color+"55":"#162616"}` }}>
                             {p.emoji} {p.label}
                           </button>
                         );
                       })}
                     </div>
-                    {form.positions.length > 1 && (
-                      <div style={{ fontSize:11, color:"#3a5a3a", marginTop:6 }}>✓ Jogador polivalente</div>
-                    )}
+                    {form.positions.length > 1 && <div style={{ fontSize:11, color:"#3a5a3a", marginTop:6 }}>✓ Jogador polivalente</div>}
                   </div>
                 )}
-
                 <div style={{ marginTop:12 }}>
-                  <div style={lbl({marginBottom:6})}>📝 APELIDOS</div>
+                  <div style={S.lbl({ marginBottom:6 })}>📝 APELIDOS</div>
                   <div style={{ display:"flex", gap:6 }}>
-                    <input style={{ ...inp, flex:1, fontSize:13, padding:"9px 12px" }}
-                      placeholder="ex: Rod, Rodrigão..."
-                      value={aliasInput} onChange={e => setAliasInput(e.target.value)}
-                      onKeyDown={e => e.key==="Enter" && addAlias()}/>
-                    <button onClick={addAlias}
-                      style={{ background:"#1a3a2a", border:"1px solid #2a5a3a", color:"#4ade80",
-                        borderRadius:8, padding:"0 14px", cursor:"pointer",
-                        fontSize:18, fontWeight:900, fontFamily:"inherit" }}>+</button>
+                    <input style={{ ...S.inp, flex:1, fontSize:13, padding:"9px 12px" }} placeholder="ex: Rod, Rodrigão..."
+                      value={aliasInput} onChange={e => setAliasInput(e.target.value)} onKeyDown={e => e.key==="Enter" && addAlias()}/>
+                    <button onClick={addAlias} style={{ background:"#1a3a2a", border:"1px solid #2a5a3a", color:"#4ade80", borderRadius:8, padding:"0 14px", cursor:"pointer", fontSize:18, fontWeight:900, fontFamily:FONT }}>+</button>
                   </div>
                   {form.aliases.length > 0 && (
                     <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginTop:8 }}>
                       {form.aliases.map(a => (
-                        <div key={a} style={{ background:"#0a1e1a", border:"1px solid #1e4a3a",
-                          borderRadius:8, padding:"4px 10px", fontSize:12, color:"#4ade80",
-                          display:"flex", alignItems:"center", gap:6 }}>
+                        <div key={a} style={{ background:"#0a1e1a", border:"1px solid #1e4a3a", borderRadius:8, padding:"4px 10px", fontSize:12, color:"#4ade80", display:"flex", alignItems:"center", gap:6 }}>
                           {a}
-                          <button onClick={() => removeAlias(a)}
-                            style={{ background:"none", border:"none", color:"#ef4444",
-                              cursor:"pointer", fontSize:12, padding:0, fontFamily:"inherit" }}>✕</button>
+                          <button onClick={() => removeAlias(a)} style={{ background:"none", border:"none", color:"#ef4444", cursor:"pointer", fontSize:12, padding:0 }}>✕</button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:12 }}>
                   <div>
-                    <div style={lbl({marginBottom:4})}>PERNA</div>
-                    <select style={sel({width:"100%"})} value={form.foot} onChange={e=>setForm(f=>({...f,foot:e.target.value}))}>
+                    <div style={S.lbl({ marginBottom:4 })}>PERNA</div>
+                    <select style={S.sel({ width:"100%" })} value={form.foot} onChange={e => setForm(f => ({ ...f, foot: e.target.value }))}>
                       <option value="direita">🦵 Direita</option>
                       <option value="esquerda">🦵 Esquerda</option>
                       <option value="ambas">🦵 Ambas</option>
                     </select>
                   </div>
                   <div>
-                    <div style={lbl({marginBottom:4})}>LADO</div>
-                    <select style={sel({width:"100%"})} value={form.side} onChange={e=>setForm(f=>({...f,side:e.target.value}))}>
+                    <div style={S.lbl({ marginBottom:4 })}>LADO</div>
+                    <select style={S.sel({ width:"100%" })} value={form.side} onChange={e => setForm(f => ({ ...f, side: e.target.value }))}>
                       <option value="canhoto">◀ Canhoto</option>
                       <option value="ambos">◀▶ Ambos</option>
                       <option value="destro">▶ Destro</option>
                     </select>
                   </div>
                 </div>
-
                 {!form.isGoalkeeper && (
                   <div style={{ marginTop:12 }}>
-                    <div style={lbl()}>ATRIBUTOS</div>
+                    <div style={S.lbl()}>ATRIBUTOS</div>
                     {[
                       { key:"fisico",    icon:"💪", label:"Físico",    color:"#f97316" },
                       { key:"defensivo", icon:"🛡️", label:"Defensivo", color:"#4FC3F7" },
@@ -1152,86 +891,66 @@ useEffect(() => {
                         <span style={{ fontSize:13, width:90, color:"#a0c0a0" }}>{attr.icon} {attr.label}</span>
                         <div style={{ display:"flex", gap:2 }}>
                           {[1,2,3].map(v => (
-                            <button key={v} onClick={() => setForm(f=>({...f,[attr.key]:v}))}
-                              style={{ background:"none", border:"none", cursor:"pointer", fontSize:22,
-                                color: form[attr.key]>=v ? attr.color : "#1e3a1e",
-                                padding:"0 2px", transition:"color .1s" }}>★</button>
+                            <button key={v} onClick={() => setForm(f => ({ ...f, [attr.key]: v }))}
+                              style={{ background:"none", border:"none", cursor:"pointer", fontSize:22, color:form[attr.key]>=v?attr.color:"#1e3a1e", padding:"0 2px", transition:"color .1s" }}>★</button>
                           ))}
                         </div>
-                        <span style={{ fontSize:11, color:"#3a5a3a" }}>
-                          {["","Básico","Regular","Forte"][form[attr.key]||1]}
-                        </span>
+                        <span style={{ fontSize:11, color:"#3a5a3a" }}>{["","Básico","Regular","Forte"][form[attr.key]||1]}</span>
                       </div>
                     ))}
                   </div>
                 )}
-
-                <button onClick={saveForm} style={btnG()}>{editId?"💾 SALVAR":"➕ ADICIONAR"}</button>
-                <button onClick={() => { setForm(null); setEditId(null); }}
-                  style={btnG({background:"#1f2937",boxShadow:"none",marginTop:6})}>CANCELAR</button>
+                <button onClick={saveForm} disabled={saving} style={S.btnG({ opacity:saving?0.6:1 })}>
+                  {saving ? "💾 SALVANDO..." : editId ? "💾 SALVAR" : "➕ ADICIONAR"}
+                </button>
+                <button onClick={() => { setForm(null); setEditId(null); }} style={S.btnG({ background:"#1f2937", boxShadow:"none", marginTop:6 })}>CANCELAR</button>
               </div>
             )}
 
-            {players.filter(p=>p.isGoalkeeper).length > 0 && (
-              <>
-                <div style={lbl({color:"#fbbf24",marginBottom:6,marginTop:4})}>🧤 GOLEIROS</div>
-                {players.filter(p=>p.isGoalkeeper).map(pl => (
-                  <PlayerRow key={pl.id} pl={pl} onEdit={openEdit} onDelete={deletePlayer}/>
-                ))}
-              </>
-            )}
-            {players.filter(p=>!p.isGoalkeeper).length > 0 && (
-              <>
-                <div style={lbl({marginBottom:6,marginTop:8})}>👥 JOGADORES DE LINHA</div>
-                {players.filter(p=>!p.isGoalkeeper).map(pl => (
-                  <PlayerRow key={pl.id} pl={pl} onEdit={openEdit} onDelete={deletePlayer}/>
-                ))}
-              </>
-            )}
-            {players.length === 0 && (
-              <div style={{ textAlign:"center", color:"#1e2e1e", padding:"40px 20px", fontSize:14 }}>
-                Nenhum atleta cadastrado — clique em + ⚽
+            {players.filter(p => p.isGoalkeeper).length > 0 && (
+              <div>
+                <div style={S.lbl({ color:"#fbbf24", marginBottom:6, marginTop:4 })}>🧤 GOLEIROS</div>
+                {players.filter(p => p.isGoalkeeper).map(pl => <PlayerRow key={pl.id} pl={pl} onEdit={openEdit} onDelete={deletePlayer}/>)}
               </div>
             )}
-          </>
+            {players.filter(p => !p.isGoalkeeper).length > 0 && (
+              <div>
+                <div style={S.lbl({ marginBottom:6, marginTop:8 })}>👥 JOGADORES DE LINHA</div>
+                {players.filter(p => !p.isGoalkeeper).map(pl => <PlayerRow key={pl.id} pl={pl} onEdit={openEdit} onDelete={deletePlayer}/>)}
+              </div>
+            )}
+            {players.length === 0 && !form && (
+              <div style={{ textAlign:"center", color:"#1e2e1e", padding:"40px 20px", fontSize:14 }}>Nenhum atleta cadastrado — clique em + ⚽</div>
+            )}
+          </div>
         )}
 
         {/* ── SORTEIO ── */}
         {tab === "sorteio" && (
-          <>
+          <div>
             {weekLine.length === 0 ? (
               <div style={{ textAlign:"center", padding:"50px 20px", color:"#1e2e1e" }}>
                 <div style={{ fontSize:56, marginBottom:16 }}>📋</div>
                 <div style={{ fontSize:16, fontWeight:800 }}>Nenhuma lista confirmada</div>
-                <button onClick={() => setTab("lista")} style={btnG({maxWidth:220,margin:"20px auto 0"})}>
-                  IR PARA LISTA →
-                </button>
+                <button onClick={() => setTab("lista")} style={S.btnG({ maxWidth:220, margin:"20px auto 0" })}>IR PARA LISTA →</button>
               </div>
             ) : (
-              <>
-                <div style={card()}>
+              <div>
+                <div style={S.card()}>
                   <div style={{ fontSize:15, fontWeight:800, marginBottom:10 }}>
                     {weekLine.length} jogadores de linha
-                    {weekGK.length > 0 && (
-                      <span style={{ fontSize:12, color:"#fbbf24", marginLeft:10 }}>
-                        🧤 {weekGK.map(g=>g.name).join(", ")}
-                      </span>
-                    )}
+                    {weekGK.length > 0 && <span style={{ fontSize:12, color:"#fbbf24", marginLeft:10 }}>🧤 {weekGK.map(g=>g.name).join(", ")}</span>}
                   </div>
-                  <div style={lbl()}>JOGADORES POR TIME (sem goleiro)</div>
+                  <div style={S.lbl()}>JOGADORES POR TIME (sem goleiro)</div>
                   <div style={{ display:"flex", gap:8, marginBottom:10 }}>
                     {[5,6].map(n => {
-                      const numFull = Math.min(4, Math.floor(weekLine.length/n));
-                      const rem     = weekLine.length - numFull*n;
+                      const numFull = Math.min(4, Math.floor(weekLine.length / n));
+                      const rem     = weekLine.length - numFull * n;
                       const ok      = numFull >= 2;
                       const hasInc  = rem > 0 && numFull < 4;
                       return (
                         <button key={n} onClick={() => setTeamSize(n)}
-                          style={{ flex:1, padding:"10px 6px", borderRadius:8, fontWeight:800,
-                            cursor:"pointer", fontFamily:"inherit",
-                            background: teamSize===n?"#16a34a":"#0d160d",
-                            color: teamSize===n?"#fff" : ok?"#3a5a3a":"#1e2e1e",
-                            border:`1px solid ${teamSize===n?"#4ade80":ok?"#1e3a1e":"#111"}` }}>
+                          style={{ flex:1, padding:"10px 6px", borderRadius:8, fontWeight:800, cursor:"pointer", fontFamily:FONT, background:teamSize===n?"#16a34a":"#0d160d", color:teamSize===n?"#fff":ok?"#3a5a3a":"#1e2e1e", border:`1px solid ${teamSize===n?"#4ade80":ok?"#1e3a1e":"#111"}` }}>
                           <div style={{ fontSize:18 }}>{n+1}x{n+1}</div>
                           <div style={{ fontSize:9, opacity:.7, marginTop:2, fontWeight:600, lineHeight:1.4 }}>
                             {ok ? `${numFull} times${hasInc?` + 1 incompleto`:""}` : "jogadores insuf."}
@@ -1243,41 +962,30 @@ useEffect(() => {
                   <div style={{ fontSize:11, color:"#3a5a3a", marginBottom:12 }}>
                     {teamSize===5 ? "GL · FX · ALA · ALA · MEIA · PIV" : "GL · FX · FX · ALA · ALA · MEIA · PIV"}
                   </div>
-                  <button onClick={doSort}
-                    style={{ background:"linear-gradient(135deg,#4ade80,#16a34a)", color:"#060d06",
-                      border:"none", borderRadius:12, padding:"16px", fontSize:19, fontWeight:900,
-                      cursor:"pointer", letterSpacing:2, width:"100%",
-                      boxShadow:"0 6px 32px #4ade8055", fontFamily:"inherit" }}>
+                  <button onClick={doSort} style={{ background:"linear-gradient(135deg,#4ade80,#16a34a)", color:"#060d06", border:"none", borderRadius:12, padding:"16px", fontSize:19, fontWeight:900, cursor:"pointer", letterSpacing:2, width:"100%", boxShadow:"0 6px 32px #4ade8055", fontFamily:FONT }}>
                     🎲 SORTEAR TIMES
                   </button>
                 </div>
 
                 {teams && (
-                  <>
+                  <div>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
                       <div style={{ fontSize:18, fontWeight:900, color:"#4ade80" }}>{teams.length} TIMES SORTEADOS</div>
-                      <button onClick={doSort} style={btnSm("#4ade80",{padding:"7px 12px"})}>🔄 Novo sorteio</button>
+                      <button onClick={doSort} style={S.btnSm("#4ade80", { padding:"7px 12px" })}>🔄 Novo sorteio</button>
                     </div>
                     {teams.map((team, i) => {
-                      const tc     = TEAM_COLORS[i % TEAM_COLORS.length];
-                      const isInc  = team.some(p => p.isGhost);
-                      const realPl = team.filter(p => !p.isGhost);
-                      const total  = realPl.reduce((s,p) => s+playerScore(p), 0);
+                      const tc    = TEAM_COLORS[i % TEAM_COLORS.length];
+                      const isInc = team.some(p => p.isGhost);
+                      const total = team.filter(p => !p.isGhost).reduce((s,p) => s+playerScore(p), 0);
                       return (
-                        <div key={i} style={{ background:tc.bg, borderRadius:16, overflow:"hidden",
-                          marginBottom:16, boxShadow:"0 8px 32px #00000070" }}>
-                          <div style={{ background:tc.accent, padding:"12px 16px",
-                            display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <div key={i} style={{ background:tc.bg, borderRadius:16, overflow:"hidden", marginBottom:16, boxShadow:"0 8px 32px #00000070" }}>
+                          <div style={{ background:tc.accent, padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                             <div>
                               <div style={{ fontSize:20, fontWeight:900, color:tc.text, letterSpacing:2 }}>
                                 TIME {i+1} · {tc.name.toUpperCase()}
                                 {isInc && <span style={{ fontSize:11, marginLeft:8, opacity:.7 }}>⚠ incompleto</span>}
                               </div>
-                              {isInc && (
-                                <div style={{ fontSize:11, color:tc.text, opacity:.65, marginTop:2 }}>
-                                  🔄 Completar com jogador da fila
-                                </div>
-                              )}
+                              {isInc && <div style={{ fontSize:11, color:tc.text, opacity:.65, marginTop:2 }}>🔄 Completar com jogador da fila</div>}
                             </div>
                             <div style={{ fontSize:12, color:tc.text, opacity:.6, fontWeight:700 }}>{total} pts</div>
                           </div>
@@ -1285,18 +993,12 @@ useEffect(() => {
                             <Pitch team={team} teamSize={teamSize} tc={tc}/>
                           </div>
                           {weekGK.length > 0 && (
-                            <div style={{ padding:"8px 14px", margin:"0 10px 8px",
-                              background:`${tc.text}10`, borderRadius:8,
-                              display:"flex", alignItems:"center", gap:10 }}>
+                            <div style={{ padding:"8px 14px", margin:"0 10px 8px", background:`${tc.text}10`, borderRadius:8, display:"flex", alignItems:"center", gap:10 }}>
                               <span style={{ fontSize:18 }}>🧤</span>
-                              <select
-                                style={sel({flex:1,background:tc.gkBg,color:tc.text,border:`1px solid ${tc.text}22`})}
-                                value={assignedGKs[i]||""}
-                                onChange={e => setAssignedGKs(g=>({...g,[i]:e.target.value}))}>
+                              <select style={S.sel({ flex:1, background:tc.gkBg, color:tc.text, border:`1px solid ${tc.text}22` })}
+                                value={assignedGKs[i]||""} onChange={e => setAssignedGKs(g => ({ ...g, [i]: e.target.value }))}>
                                 <option value="">Atribuir goleiro...</option>
-                                {weekGK.map(g => (
-                                  <option key={g.id||g.name} value={g.name}>{g.name}</option>
-                                ))}
+                                {weekGK.map(g => <option key={g.id||g.name} value={g.name}>{g.name}</option>)}
                               </select>
                             </div>
                           )}
@@ -1304,29 +1006,16 @@ useEffect(() => {
                             {team.map((pl, j) => {
                               const pd = POS[pl.assignedPos];
                               return (
-                                <div key={pl.id||j}
-                                  style={{ display:"flex", alignItems:"center", gap:10,
-                                    padding:"8px 14px",
-                                    borderTop:`1px solid ${tc.text}${j===0?"18":"0a"}`,
-                                    color:tc.text, opacity: pl.isGhost ? .45 : 1 }}>
-                                  <span style={{ width:22, height:22, borderRadius:"50%",
-                                    background:`${tc.text}22`, display:"flex", alignItems:"center",
-                                    justifyContent:"center", fontSize:10, fontWeight:900, flexShrink:0 }}>
-                                    {j+1}
-                                  </span>
+                                <div key={pl.id||j} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderTop:`1px solid ${tc.text}${j===0?"18":"0a"}`, color:tc.text, opacity:pl.isGhost?.45:1 }}>
+                                  <span style={{ width:22, height:22, borderRadius:"50%", background:`${tc.text}22`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, flexShrink:0 }}>{j+1}</span>
                                   <div style={{ flex:1 }}>
                                     {pl.isGhost
                                       ? <div style={{ fontStyle:"italic", fontSize:13 }}>🔄 Pegar jogador da fila</div>
                                       : (
-                                        <>
+                                        <div>
                                           <div style={{ fontWeight:800, fontSize:15 }}>{pl.name}</div>
-                                          {pd && (
-                                            <span style={{ fontSize:10, background:`${tc.text}15`,
-                                              color:tc.text, borderRadius:6, padding:"1px 6px", fontWeight:700 }}>
-                                              {pd.emoji} {pd.label}
-                                            </span>
-                                          )}
-                                        </>
+                                          {pd && <span style={{ fontSize:10, background:`${tc.text}15`, color:tc.text, borderRadius:6, padding:"1px 6px", fontWeight:700 }}>{pd.emoji} {pd.label}</span>}
+                                        </div>
                                       )
                                     }
                                   </div>
@@ -1344,62 +1033,56 @@ useEffect(() => {
                         </div>
                       );
                     })}
-                  </>
+                  </div>
                 )}
-              </>
+              </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// ── Root ──────────────────────────────────────────────────────────────────────
-// ── Root ──────────────────────────────────────────────────────────────────────
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function RachaoFC() {
-  const [unlocked,     setUnlocked]     = useState(false);
-  const [groups,       setGroups]       = useState([]);
-  const [activeGroup,  setActiveGroup]  = useState(null);
-  const [loadingRoot,  setLoadingRoot]  = useState(true);
-  const [toast,        setToast]        = useState(null);
+  const [unlocked,    setUnlocked]    = useState(false);
+  const [groups,      setGroups]      = useState([]);
+  const [activeGroup, setActiveGroup] = useState(null);
+  const [loadingRoot, setLoadingRoot] = useState(true);
+  const [toast,       setToast]       = useState(null);
   const toastT = useRef(null);
 
   useEffect(() => {
     (async () => {
-      try { 
-        const g = await loadGroups(); 
-        if (g) setGroups(g); 
-      }
-      catch (e) {}
-      finally { setLoadingRoot(false); }
+      const g = await loadGroups();
+      setGroups(g);
+      setLoadingRoot(false);
     })();
   }, []);
 
-  const notify = (msg, type="ok") => {
+  function notify(msg, type="ok") {
     clearTimeout(toastT.current);
     setToast({ msg, type });
     toastT.current = setTimeout(() => setToast(null), 2600);
-  };
+  }
 
-  const createGroup = async (g) => { 
-    const newGroup = { ...g, playerCount: 0 };
-    await saveGroup(newGroup);
-    setGroups(gs => [...gs, newGroup]); 
-    notify(`${g.emoji} ${g.name} criado!`); 
-  };
+  async function handleCreate(g) {
+    await saveGroup({ ...g, playerCount: 0 });
+    setGroups(gs => [...gs, { ...g, playerCount: 0 }]);
+    notify(`${g.emoji} ${g.name} criado!`);
+  }
 
-  const deleteGroup = async (id) => {
+  async function handleDelete(id) {
     await deleteGroupById(id);
     setGroups(gs => gs.filter(g => g.id !== id));
     notify("Rachão removido");
-  };
+  }
 
-  const handleBack = async (count, gid, goBack=false) => {
-    await saveGroup({ id: gid, playerCount: count });
-    setGroups(gs => gs.map(g => g.id===gid ? {...g, playerCount:count} : g));
+  function handleBack(count, gid, goBack=false) {
+    setGroups(gs => gs.map(g => g.id === gid ? { ...g, playerCount: count } : g));
     if (goBack) setActiveGroup(null);
-  };
+  }
 
   if (!unlocked) {
     return (
@@ -1410,9 +1093,7 @@ export default function RachaoFC() {
     );
   }
 
-  if (loadingRoot) {
-    return <LoadingBall />;
-  }
+  if (loadingRoot) return <Loader />;
 
   if (activeGroup) {
     return (
@@ -1429,8 +1110,8 @@ export default function RachaoFC() {
       <GroupsScreen
         groups={groups}
         onSelect={g => setActiveGroup(g)}
-        onCreate={createGroup}
-        onDelete={deleteGroup}
+        onCreate={handleCreate}
+        onDelete={handleDelete}
         onLock={() => setUnlocked(false)}
       />
     </>
