@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from './lib/supabase.js';
+import Login from './Login'
 
 const ADMIN_PIN = "1234";
 
