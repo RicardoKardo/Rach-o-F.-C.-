@@ -1047,74 +1047,92 @@ function GroupApp({ group, onBack, notify }) {
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function RachaoFC() {
-  const [unlocked,    setUnlocked]    = useState(false);
-  const [groups,      setGroups]      = useState([]);
-  const [activeGroup, setActiveGroup] = useState(null);
-  const [loadingRoot, setLoadingRoot] = useState(true);
-  const [toast,       setToast]       = useState(null);
-  const toastT = useRef(null);
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [groups, setGroups] = useState([])
+  const [activeGroup, setActiveGroup] = useState(null)
+  const [toast, setToast] = useState(null)
+  const toastT = useRef(null)
 
+  // Verificar sessão do usuário
   useEffect(() => {
-    (async () => {
-      const g = await loadGroups();
-      setGroups(g);
-      setLoadingRoot(false);
-    })();
-  }, []);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
 
-  function notify(msg, type="ok") {
-    clearTimeout(toastT.current);
-    setToast({ msg, type });
-    toastT.current = setTimeout(() => setToast(null), 2600);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Carregar grupos do usuário
+  useEffect(() => {
+    if (session?.user) {
+      loadGroups(session.user.id).then(setGroups)
+    }
+  }, [session])
+
+  const notify = (msg, type = "ok") => {
+    clearTimeout(toastT.current)
+    setToast({ msg, type })
+    toastT.current = setTimeout(() => setToast(null), 2600)
   }
 
-  async function handleCreate(g) {
-    await saveGroup({ ...g, playerCount: 0 });
-    setGroups(gs => [...gs, { ...g, playerCount: 0 }]);
-    notify(`${g.emoji} ${g.name} criado!`);
+  const createGroup = async (g) => {
+    if (!session?.user) return
+    const newGroup = { ...g, playerCount: 0, user_id: session.user.id }
+    await saveGroup(newGroup)
+    setGroups(gs => [...gs, newGroup])
+    notify(`${g.emoji} ${g.name} criado!`)
   }
 
-  async function handleDelete(id) {
-    await deleteGroupById(id);
-    setGroups(gs => gs.filter(g => g.id !== id));
-    notify("Rachão removido");
+  const deleteGroup = async (id) => {
+    await deleteGroupById(id)
+    setGroups(gs => gs.filter(g => g.id !== id))
+    notify("Rachão removido")
   }
 
-  function handleBack(count, gid, goBack=false) {
-    setGroups(gs => gs.map(g => g.id === gid ? { ...g, playerCount: count } : g));
-    if (goBack) setActiveGroup(null);
+  const handleBack = async (count, gid, goBack = false) => {
+    await saveGroup({ id: gid, playerCount: count, user_id: session?.user.id })
+    setGroups(gs => gs.map(g => g.id === gid ? { ...g, playerCount: count } : g))
+    if (goBack) setActiveGroup(null)
   }
 
-  if (!unlocked) {
+  if (loading) {
+    return <LoadingBall />
+  }
+
+  if (!session) {
     return (
       <>
-        {toast && <Toast msg={toast.msg} type={toast.type}/>}
-        <PinScreen onUnlock={() => setUnlocked(true)}/>
+        {toast && <Toast msg={toast.msg} type={toast.type} />}
+        <Login />
       </>
-    );
+    )
   }
-
-  if (loadingRoot) return <Loader />;
 
   if (activeGroup) {
     return (
       <>
-        {toast && <Toast msg={toast.msg} type={toast.type}/>}
-        <GroupApp group={activeGroup} onBack={handleBack} notify={notify}/>
+        {toast && <Toast msg={toast.msg} type={toast.type} />}
+        <GroupApp group={activeGroup} onBack={handleBack} notify={notify} userId={session.user.id} />
       </>
-    );
+    )
   }
 
   return (
     <>
-      {toast && <Toast msg={toast.msg} type={toast.type}/>}
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
       <GroupsScreen
         groups={groups}
         onSelect={g => setActiveGroup(g)}
-        onCreate={handleCreate}
-        onDelete={handleDelete}
-        onLock={() => setUnlocked(false)}
+        onCreate={createGroup}
+        onDelete={deleteGroup}
+        onLock={() => supabase.auth.signOut()}
       />
     </>
-  );
+  )
 }
