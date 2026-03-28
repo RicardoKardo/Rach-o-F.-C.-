@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase } from './lib/supabase.js';
-import Login from './Login'
+import { supabase } from './lib/supabase.js'
+import Login from './Login';
 
 const ADMIN_PIN = "1234";
 
@@ -13,19 +13,25 @@ const POSITIONS_LINE = [
 const POSITION_GK = { id: "goleiro", label: "Goleiro", short: "GL", color: "#FFD700", emoji: "🧤" };
 const ALL_POS = [POSITION_GK, ...POSITIONS_LINE];
 const POS = Object.fromEntries(ALL_POS.map(p => [p.id, p]));
-
 const FORMATIONS = {
   5: ["fixo","ala","ala","meia","pivo"],
   6: ["fixo","fixo","ala","ala","meia","pivo"],
 };
 const PITCH_SLOTS = {
   5: [
-    { pos:"pivo", x:50, y:16 }, { pos:"ala", x:14, y:36 }, { pos:"ala", x:86, y:36 },
-    { pos:"meia", x:50, y:55 }, { pos:"fixo", x:50, y:74 },
+    { pos:"pivo", x:50, y:16 },
+    { pos:"ala",  x:14, y:36 },
+    { pos:"ala",  x:86, y:36 },
+    { pos:"meia", x:50, y:55 },
+    { pos:"fixo", x:50, y:74 },
   ],
   6: [
-    { pos:"pivo", x:50, y:14 }, { pos:"ala", x:14, y:33 }, { pos:"ala", x:86, y:33 },
-    { pos:"meia", x:50, y:52 }, { pos:"fixo", x:26, y:72 }, { pos:"fixo", x:74, y:72 },
+    { pos:"pivo", x:50, y:14 },
+    { pos:"ala",  x:14, y:33 },
+    { pos:"ala",  x:86, y:33 },
+    { pos:"meia", x:50, y:52 },
+    { pos:"fixo", x:26, y:72 },
+    { pos:"fixo", x:74, y:72 },
   ],
 };
 const TEAM_COLORS = [
@@ -35,7 +41,6 @@ const TEAM_COLORS = [
   { name:"Azul",     bg:"#1e3a8a", text:"#fff",    accent:"#1d4ed8", gkBg:"#1e3a8a" },
 ];
 const GROUP_EMOJIS = ["⚽","🏆","🥇","🔥","⭐","🎯","🦁","🐯","🦊","🐺"];
-const FONT = "'Barlow Condensed', Arial Narrow, Arial, sans-serif";
 
 // ─── Supabase helpers ─────────────────────────────────────────────────────────
 
