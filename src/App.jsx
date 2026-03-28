@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase.js'
 import Login from './Login';
 
 const ADMIN_PIN = "1234";
+const FONT = "'Barlow Condensed', 'Arial Narrow', Arial, sans-serif";
 
 const POSITIONS_LINE = [
   { id: "fixo", label: "Fixo",  short: "FX",  color: "#4FC3F7", emoji: "🛡️" },
@@ -44,7 +45,6 @@ const GROUP_EMOJIS = ["⚽","🏆","🥇","🔥","⭐","🎯","🦁","🐯","�
 
 // ─── Supabase helpers ─────────────────────────────────────────────────────────
 
-// Converte snake_case do banco → camelCase do app
 function dbToPlayer(p) {
   return {
     ...p,
@@ -54,10 +54,11 @@ function dbToPlayer(p) {
   };
 }
 
-async function loadGroups() {
+async function loadGroups(userId) {
   const { data, error } = await supabase
     .from('groups')
     .select('*')
+    .eq('user_id', userId)
     .order('created_at', { ascending: true });
   if (error) { console.error('loadGroups:', error); return []; }
   return data.map(g => ({
@@ -77,6 +78,7 @@ async function saveGroup(group) {
       name:  group.name,
       emoji: group.emoji || '⚽',
       player_count: group.playerCount || 0,
+      user_id: group.user_id,
     }, { onConflict: 'id' });
   if (error) console.error('saveGroup:', error);
 }
@@ -97,22 +99,24 @@ async function deleteGroupById(id) {
   if (error) console.error('deleteGroupById:', error);
 }
 
-async function loadPlayers(groupId) {
+async function loadPlayers(groupId, userId) {
   const { data, error } = await supabase
     .from('players')
     .select('*')
     .eq('group_id', groupId)
+    .eq('user_id', userId)
     .order('created_at', { ascending: true });
   if (error) { console.error('loadPlayers:', error); return []; }
   return data.map(dbToPlayer);
 }
 
-async function savePlayer(player, groupId) {
+async function savePlayer(player, groupId, userId) {
   const { error } = await supabase
     .from('players')
     .upsert({
       id:            player.id,
       group_id:      groupId,
+      user_id:       userId,
       name:          player.name,
       is_goalkeeper: player.isGoalkeeper || false,
       positions:     player.positions    || [],
@@ -134,12 +138,13 @@ async function deletePlayerById(id) {
   if (error) console.error('deletePlayerById:', error);
 }
 
-async function loadWeekPlayers(groupId) {
+async function loadWeekPlayers(groupId, userId) {
   const today = new Date().toISOString().split('T')[0];
   const { data, error } = await supabase
     .from('week_players')
     .select('*')
     .eq('group_id', groupId)
+    .eq('user_id', userId)
     .eq('week_date', today);
   if (error) { console.error('loadWeekPlayers:', error); return { line: [], gk: [] }; }
   const line = data.filter(p => !p.is_goalkeeper).map(p => ({
@@ -164,19 +169,20 @@ async function loadWeekPlayers(groupId) {
   return { line, gk };
 }
 
-async function saveWeekPlayers(groupId, linePlayers, gkPlayers) {
+async function saveWeekPlayers(groupId, linePlayers, gkPlayers, userId) {
   const today = new Date().toISOString().split('T')[0];
-  // Apaga a lista atual do dia
   await supabase
     .from('week_players')
     .delete()
     .eq('group_id', groupId)
+    .eq('user_id', userId)
     .eq('week_date', today);
 
   const allPlayers = [
     ...linePlayers.map((p, i) => ({
       id:           `${groupId}_line_${i}_${today}`,
       group_id:     groupId,
+      user_id:      userId,
       player_id:    p.id && !p.avulso ? p.id : null,
       player_name:  p.name,
       week_date:    today,
@@ -190,6 +196,7 @@ async function saveWeekPlayers(groupId, linePlayers, gkPlayers) {
     ...gkPlayers.map((p, i) => ({
       id:           `${groupId}_gk_${i}_${today}`,
       group_id:     groupId,
+      user_id:      userId,
       player_id:    p.id && !p.avulso ? p.id : null,
       player_name:  p.name,
       week_date:    today,
@@ -204,12 +211,13 @@ async function saveWeekPlayers(groupId, linePlayers, gkPlayers) {
   }
 }
 
-async function clearWeekPlayers(groupId) {
+async function clearWeekPlayers(groupId, userId) {
   const today = new Date().toISOString().split('T')[0];
   await supabase
     .from('week_players')
     .delete()
     .eq('group_id', groupId)
+    .eq('user_id', userId)
     .eq('week_date', today);
 }
 
@@ -377,6 +385,14 @@ function Loader() {
         <div style={{ fontSize:56, animation:"pulse 1s infinite" }}>⚽</div>
         <div style={{ fontSize:13, marginTop:12, letterSpacing:2 }}>CARREGANDO...</div>
       </div>
+    </div>
+  );
+}
+
+function LoadingBall() {
+  return (
+    <div style={{ minHeight:"100vh", background:"#060d06", display:"flex", alignItems:"center", justifyContent:"center", fontSize:40 }}>
+      ⚽
     </div>
   );
 }
@@ -581,7 +597,7 @@ function PlayerRow({ pl, onEdit, onDelete }) {
 }
 
 // ─── Group App ────────────────────────────────────────────────────────────────
-function GroupApp({ group, onBack, notify }) {
+function GroupApp({ group, onBack, notify, userId }) {
   const gid = group.id;
   const [players,     setPlayers]     = useState([]);
   const [weekLine,    setWeekLine]    = useState([]);
@@ -603,8 +619,8 @@ function GroupApp({ group, onBack, notify }) {
     (async () => {
       setLoading(true);
       const [pl, week] = await Promise.all([
-        loadPlayers(gid),
-        loadWeekPlayers(gid),
+        loadPlayers(gid, userId),
+        loadWeekPlayers(gid, userId),
       ]);
       setPlayers(pl);
       setWeekLine(week.line);
@@ -612,7 +628,7 @@ function GroupApp({ group, onBack, notify }) {
       setPasteOpen(week.line.length === 0);
       setLoading(false);
     })();
-  }, [gid]);
+  }, [gid, userId]);
 
   const emptyForm = () => ({ name:"", isGoalkeeper:false, positions:[], foot:"direita", side:"ambos", fisico:2, defensivo:2, ofensivo:2, aliases:[] });
   const openAdd  = () => { setEditId(null); setForm(emptyForm()); setAliasInput(""); };
@@ -632,7 +648,7 @@ function GroupApp({ group, onBack, notify }) {
     setSaving(true);
     const id   = editId || Date.now().toString();
     const data = { ...form, id, name: form.name.trim() };
-    await savePlayer(data, gid);
+    await savePlayer(data, gid, userId);
     const updated = editId
       ? players.map(p => p.id === editId ? data : p)
       : [...players, data];
@@ -665,7 +681,7 @@ function GroupApp({ group, onBack, notify }) {
     setSaving(true);
     const newLine = parsed.lineResult.map(r => r.player || { id:"av_"+Date.now()+Math.random(), name:r.raw, isGoalkeeper:false, positions:["ala"], foot:"direita", side:"ambos", fisico:2, defensivo:2, ofensivo:2, avulso:true });
     const newGK   = parsed.gkResult.map(r  => r.player || { id:"gkav_"+Date.now()+Math.random(), name:r.raw, isGoalkeeper:true, avulso:true });
-    await saveWeekPlayers(gid, newLine, newGK);
+    await saveWeekPlayers(gid, newLine, newGK, userId);
     setWeekLine(newLine); setWeekGK(newGK);
     setTeams(null); setAssignedGKs({});
     setParsed(null); setListText(""); setPasteOpen(false); setSaving(false);
@@ -673,7 +689,7 @@ function GroupApp({ group, onBack, notify }) {
   }
 
   async function clearWeek() {
-    await clearWeekPlayers(gid);
+    await clearWeekPlayers(gid, userId);
     setWeekLine([]); setWeekGK([]);
     setTeams(null); setAssignedGKs({});
     setParsed(null); setListText(""); setPasteOpen(true);
@@ -703,7 +719,6 @@ function GroupApp({ group, onBack, notify }) {
     <div style={{ minHeight:"100vh", background:"#060d06", fontFamily:FONT, color:"#e8f5e8", maxWidth:480, margin:"0 auto", paddingBottom:90 }}>
       <style>{GLOBAL_CSS}</style>
 
-      {/* Header */}
       <div style={{ background:"linear-gradient(160deg,#0b1e0b,#060d06)", borderBottom:"1px solid #162616", padding:"14px 16px 10px", position:"sticky", top:0, zIndex:10, boxShadow:"0 2px 20px #00000090", display:"flex", alignItems:"center", gap:10 }}>
         <button onClick={() => onBack(players.length, gid, true)} style={{ background:"transparent", border:"none", color:"#3a5a3a", fontSize:28, cursor:"pointer", padding:"0 4px 0 0", lineHeight:1, fontFamily:FONT }}>‹</button>
         <span style={{ fontSize:22 }}>{group.emoji||"⚽"}</span>
@@ -714,7 +729,6 @@ function GroupApp({ group, onBack, notify }) {
         {saving && <div style={{ fontSize:11, color:"#3a5a3a", letterSpacing:1 }}>💾 salvando...</div>}
       </div>
 
-      {/* Tabs */}
       <div style={{ display:"flex", background:"#0a100a", borderBottom:"1px solid #162616", position:"sticky", top:52, zIndex:9 }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ flex:1, padding:"11px 2px", fontSize:10, fontWeight:tab===t.id?800:600, letterSpacing:1.2, textAlign:"center", cursor:"pointer", textTransform:"uppercase", color:tab===t.id?"#4ade80":"#2e4e2e", background:"none", border:"none", borderBottom:tab===t.id?"2px solid #4ade80":"2px solid transparent", fontFamily:FONT }}>
@@ -727,8 +741,6 @@ function GroupApp({ group, onBack, notify }) {
       </div>
 
       <div style={{ padding:14 }}>
-
-        {/* ── LISTA ── */}
         {tab === "lista" && (
           <div>
             {weekLine.length > 0 && (
@@ -805,7 +817,6 @@ function GroupApp({ group, onBack, notify }) {
           </div>
         )}
 
-        {/* ── ATLETAS ── */}
         {tab === "atletas" && (
           <div>
             <div style={{ display:"flex", gap:8, marginBottom:12 }}>
@@ -931,7 +942,6 @@ function GroupApp({ group, onBack, notify }) {
           </div>
         )}
 
-        {/* ── SORTEIO ── */}
         {tab === "sorteio" && (
           <div>
             {weekLine.length === 0 ? (
@@ -1012,7 +1022,7 @@ function GroupApp({ group, onBack, notify }) {
                             {team.map((pl, j) => {
                               const pd = POS[pl.assignedPos];
                               return (
-                                <div key={pl.id||j} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderTop:`1px solid ${tc.text}${j===0?"18":"0a"}`, color:tc.text, opacity:pl.isGhost?.45:1 }}>
+                                <div key={pl.id||j} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderTop:`1px solid ${tc.text}${j===0?"18":"0a"}`, color:tc.text, opacity:pl.isGhost?0.45:1 }}>
                                   <span style={{ width:22, height:22, borderRadius:"50%", background:`${tc.text}22`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, flexShrink:0 }}>{j+1}</span>
                                   <div style={{ flex:1 }}>
                                     {pl.isGhost
@@ -1059,7 +1069,6 @@ export default function RachaoFC() {
   const [toast, setToast] = useState(null)
   const toastT = useRef(null)
 
-  // Verificar sessão do usuário
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -1073,7 +1082,6 @@ export default function RachaoFC() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Carregar grupos do usuário
   useEffect(() => {
     if (session?.user) {
       loadGroups(session.user.id).then(setGroups)
