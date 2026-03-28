@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import AdminPanel from './AdminPanel.jsx';
 import { supabase } from './lib/supabase.js';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -1066,6 +1067,9 @@ export default function RachaoFC() {
   }
 
 if (authLoading) return <Loader text="CARREGANDO..." />;
+  if (window.location.pathname === '/admin-rfc2024') {
+  return <AdminPanel currentUserId={session?.user?.id} />;
+}
 if (!session)    return <AuthScreen />;
 if (session && !profile && !authLoading) {
   // Profile não carregou — cria/mostra setup em vez de travar
