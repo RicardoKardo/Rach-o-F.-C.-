@@ -1065,10 +1065,15 @@ export default function RachaoFC() {
     setSession(null); setProfile(null); setGroups([]); setActiveGroup(null);
   }
 
-  if (authLoading) return <Loader text="CARREGANDO..." />;
-  if (!session)    return <AuthScreen />;
-  if (!profile)    return <Loader text="CARREGANDO..." />;
-  if (!profile.name) return <ProfileSetupScreen userId={session.user.id} onComplete={p=>{setProfile(p);}} />;
+if (authLoading) return <Loader text="CARREGANDO..." />;
+if (!session)    return <AuthScreen />;
+if (session && !profile && !authLoading) {
+  // Profile não carregou — cria/mostra setup em vez de travar
+  return <ProfileSetupScreen userId={session.user.id} onComplete={p => setProfile(p)} />;
+}
+if (profile && !profile.name) {
+  return <ProfileSetupScreen userId={session.user.id} onComplete={p => setProfile(p)} />;
+}
 
   if (activeGroup) {
     return (
