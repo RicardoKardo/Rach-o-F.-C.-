@@ -1094,4 +1094,3 @@ export default function RachaoFC() {
     </>
   );
 }
-feat: limites de plano + smart parse + whatsapp share
