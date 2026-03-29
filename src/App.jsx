@@ -609,7 +609,7 @@ function GroupApp({group, userId, plan, onBack, notify}) {
   } finally {
     setSaving(false);
   }
-  }
+}
   async function clearWeek() {
     await clearWeekPlayers(gid);
     setWeekLine([]); setWeekGK([]);
