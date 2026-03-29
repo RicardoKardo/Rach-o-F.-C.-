@@ -15,7 +15,7 @@ const POSITIONS_LINE = [
 ];
 const POSITION_GK  = { id:"goleiro", label:"Goleiro", short:"GL", color:"#FFD700", emoji:"🧤" };
 const ALL_POS      = [POSITION_GK, ...POSITIONS_LINE];
-const POS          = Objecot.fromEntries(ALL_POS.map(p => [p.id, p]));
+const POS          = Object.fromEntries(ALL_POS.map(p => [p.id, p]));
 const FORMATIONS   = { 5:["fixo","ala","ala","meia","pivo"], 6:["fixo","fixo","ala","ala","meia","pivo"] };
 const PITCH_SLOTS  = {
   5:[{pos:"pivo",x:50,y:16},{pos:"ala",x:14,y:36},{pos:"ala",x:86,y:36},{pos:"meia",x:50,y:55},{pos:"fixo",x:50,y:74}],
