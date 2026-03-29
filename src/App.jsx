@@ -317,6 +317,7 @@ function AuthScreen() {
             <input style={{...S.inp,fontSize:28,letterSpacing:12,textAlign:"center",marginBottom:12}}
               type="number" inputMode="numeric" placeholder="000000" maxLength={6}
               value={otp} onChange={e=>setOtp(e.target.value.slice(0,6))}
+onKeyDown={e=>e.key==='Enter'&&verifyOTP()} autoFocus/>
   
 
 function shareWhatsApp(teams, weekGK, assignedGKs) {
