@@ -657,7 +657,7 @@ function GroupApp({group, userId, plan, onBack, notify}) {
   const removeAlias=a=>setForm(f=>({...f,aliases:f.aliases.filter(x=>x!==a)}));
   const togglePos =pos=>setForm(f=>({...f,positions:f.positions.includes(pos)?f.positions.filter(p=>p!==pos):[...f.positions,pos]}));
 
-  async function saveForm() {
+    async function saveForm() {
     if (!form.name.trim()) { notify("Nome obrigatório","err"); return; }
     if (!form.isGoalkeeper && form.positions.length===0) { notify("Selecione pelo menos uma posição","err"); return; }
     // Limite de jogadores
@@ -666,16 +666,24 @@ function GroupApp({group, userId, plan, onBack, notify}) {
       notify(`Limite de ${playerLimit} jogadores atingido!`,"err"); return;
     }
     setSaving(true);
-    const id   = editId || Date.now().toString();
-    const data = {...form, id, name:form.name.trim()};
-    await upsertPlayer(data, gid, userId);
-    const updated = editId ? players.map(p=>p.id===editId?data:p) : [...players, data];
-    setPlayers(updated);
-    await updateGroupCount(gid, updated.length);
-    onBack(updated.length, gid);
-    notify(editId?"Atleta atualizado ✓":"Atleta adicionado ✓");
-    setForm(null); setEditId(null); setSaving(false);
-  }
+    try {
+      const id   = editId || Date.now().toString();
+      const data = {...form, id, name:form.name.trim()};
+      await upsertPlayer(data, gid, userId);
+      const updated = editId ? players.map(p=>p.id===editId?data:p) : [...players, data];
+      setPlayers(updated);
+      await updateGroupCount(gid, updated.length);
+      onBack(updated.length, gid);
+      notify(editId?"Atleta atualizado ✓":"Atleta adicionado ✓");
+    } catch (error) {
+      console.error('Erro ao salvar atleta:', error);
+      notify("❌ Erro ao salvar atleta — tente novamente", "err");
+    } finally {
+      setForm(null); 
+      setEditId(null); 
+      setSaving(false);
+    }
+                                             }
 
   async function deletePlayer(id) {
     await deletePlayerById(id);
