@@ -316,9 +316,8 @@ function AuthScreen() {
             <div style={S.lbl({marginBottom:10})}>CÓDIGO DE 6 DÍGITOS</div>
             <input style={{...S.inp,fontSize:28,letterSpacing:12,textAlign:"center",marginBottom:12}}
               type="number" inputMode="numeric" placeholder="000000" maxLength={6}
-              value={otp} onChange={e=>setOtp(eositions(extra,formation.slice(0,extra.length)),...formation.slice(extra.length).map(makeGhost)]];
-  return best;
-}
+              value={otp} onChange={e=>setOtp(e.target.value.slice(0,6))}
+  
 
 function shareWhatsApp(teams, weekGK, assignedGKs) {
   const ICONS = ["🤍","🖤","❤️","💙"];
@@ -340,69 +339,7 @@ function shareWhatsApp(teams, weekGK, assignedGKs) {
 }
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
-const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&display=swap');
-  *{-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
-  body{margin:0;background:#060d06;}
-  input::placeholder,textarea::placeholder{color:#1e3a1e;}
-  select option{background:#0a130a;color:#e8f5e8;}
-  button:active{opacity:.82;transform:scale(0.97);}
-  @keyframes pop{0%{opacity:0;transform:translateX(-50%) scale(0.85)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
-`;
-const S = {
-  card:  (x={})=>({background:"#0d160d",border:"1px solid #162616",borderRadius:12,padding:14,marginBottom:12,...x}),
-  lbl:   (x={})=>({fontSize:10,color:"#3a5a3a",letterSpacing:2.5,textTransform:"uppercase",marginBottom:8,fontWeight:700,...x}),
-  inp:   {width:"100%",background:"#0a130a",border:"1px solid #1e3a1e",color:"#e8f5e8",padding:"11px 13px",borderRadius:8,fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:FONT},
-  sel:   (x={})=>({background:"#0a130a",border:"1px solid #1e3a1e",color:"#e8f5e8",padding:"8px 12px",borderRadius:8,fontSize:13,outline:"none",fontFamily:FONT,...x}),
-  btnG:  (x={})=>({background:"linear-gradient(135deg,#16a34a,#15803d)",color:"#fff",border:"none",borderRadius:8,padding:"12px",fontSize:14,fontWeight:800,cursor:"pointer",letterSpacing:1,textTransform:"uppercase",width:"100%",marginTop:8,boxShadow:"0 4px 16px #16a34a44",fontFamily:FONT,...x}),
-  btnSm: (col,x={})=>({background:"transparent",color:col,border:`1px solid ${col}33`,borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:700,fontFamily:FONT,...x}),
-};
 
-// ─── Componentes pequenos ─────────────────────────────────────────────────────
-function Badge({posId}){const p=POS[posId]||{short:"?",color:"#888",emoji:"?"};return<span style={{background:p.color+"22",color:p.color,border:`1px solid ${p.color}44`,borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:800,letterSpacing:0.5,whiteSpace:"nowrap"}}>{p.emoji} {p.short}</span>;}
-function Stars({value,color}){return<span>{[1,2,3].map(v=><span key={v} style={{color:v<=(value||1)?color:"#1e2e1e",fontSize:13}}>★</span>)}</span>;}
-function Toast({msg,type}){return<div style={{position:"fixed",top:14,left:"50%",transform:"translateX(-50%)",background:type==="err"?"#7f1d1d":"#14532d",color:"#fff",padding:"10px 22px",borderRadius:24,fontSize:13,fontWeight:700,zIndex:9999,border:`1px solid ${type==="err"?"#f87171":"#4ade80"}`,boxShadow:"0 4px 24px #00000099",animation:"pop .22s cubic-bezier(.34,1.56,.64,1)",whiteSpace:"nowrap"}}>{msg}</div>;}
-function Loader({text="CARREGANDO..."}){return<div style={{minHeight:"100vh",background:"#060d06",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,fontFamily:FONT}}><div style={{fontSize:48}}>⚽</div><div style={{fontSize:11,color:"#3a5a3a",letterSpacing:3}}>{text}</div></div>;}
-
-// ─── Pitch ────────────────────────────────────────────────────────────────────
-function Pitch({team,teamSize,tc}){
-  const slots=PITCH_SLOTS[teamSize]||PITCH_SLOTS[5];
-  const posGroups={};
-  team.forEach(p=>{const ap=p.assignedPos||"fixo";if(!posGroups[ap])posGroups[ap]=[];posGroups[ap].push(p);});
-  return(
-    <div style={{position:"relative",width:"100%",paddingBottom:"148%",background:"linear-gradient(175deg,#14532d 0%,#166534 48%,#14532d 100%)",borderRadius:10,overflow:"hidden"}}>
-      <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}} viewBox="0 0 100 148" preserveAspectRatio="none">
-        <rect x="2.5" y="2.5" width="95" height="143" fill="none" stroke="rgba(255,255,255,.28)" strokeWidth=".8"/>
-        <line x1="2.5" y1="74" x2="97.5" y2="74" stroke="rgba(255,255,255,.22)" strokeWidth=".6"/>
-        <circle cx="50" cy="74" r="13" fill="none" stroke="rgba(255,255,255,.22)" strokeWidth=".6"/>
-        <ellipse cx="50" cy="74" rx="2" ry="2" fill="rgba(255,255,255,.2)"/>
-        <rect x="31" y="2.5" width="38" height="13" fill="none" stroke="rgba(255,255,255,.18)" strokeWidth=".6"/>
-        <rect x="31" y="132.5" width="38" height="13" fill="none" stroke="rgba(255,255,255,.18)" strokeWidth=".6"/>
-        {[0,1,2,3,4,5,6].map(i=><rect key={i} x="2.5" y={2.5+i*20.5} width="95" height="10.2" fill={i%2===0?"rgba(255,255,255,.025)":"transparent"}/>)}
-      </svg>
-      {slots.map((slot,i)=>{
-        const pGroup=posGroups[slot.pos]||[];
-        const slotIdx=slots.filter((s,j)=>j<i&&s.pos===slot.pos).length;
-        const player=pGroup[slotIdx];const posData=POS[slot.pos];const isGhost=player?.isGhost;
-        const total=player&&!isGhost?playerScore(player):0;const stars=total>=8?3:total>=6?2:1;
-        return(
-          <div key={i} style={{position:"absolute",left:`${slot.x}%`,top:`${slot.y}%`,transform:"translate(-50%,-50%)",display:"flex",flexDirection:"column",alignItems:"center",zIndex:2}}>
-            <div style={{width:40,height:40,borderRadius:"50%",background:isGhost?"rgba(0,0,0,.35)":tc.accent,border:isGhost?"2px dashed rgba(255,255,255,.3)":`2.5px solid ${tc.text}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:isGhost?"rgba(255,255,255,.4)":tc.text,boxShadow:"0 2px 10px rgba(0,0,0,.6)",textAlign:"center",padding:"0 2px",lineHeight:1.15}}>
-              {isGhost?"?":player?player.name.split(" ")[0].slice(0,7):"?"}
-            </div>
-            <div style={{marginTop:2,background:"rgba(0,0,0,.75)",color:isGhost?"rgba(255,255,255,.3)":(posData?.color||"#fff"),fontSize:8,fontWeight:800,borderRadius:4,padding:"1px 5px",letterSpacing:.5,display:"flex",gap:3,alignItems:"center"}}>
-              <span>{posData?.short}</span>{player&&!isGhost&&<span style={{color:"#facc15"}}>{"★".repeat(stars)}</span>}
-            </div>
-          </div>
-        );
-      })}
-      <div style={{position:"absolute",left:"50%",bottom:"1.5%",transform:"translateX(-50%)",display:"flex",flexDirection:"column",alignItems:"center",zIndex:2}}>
-        <div style={{width:36,height:36,borderRadius:"50%",background:"#78350f",border:"2px solid #fbbf2430",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 2px 10px rgba(0,0,0,.6)"}}>🧤</div>
-        <div style={{marginTop:2,background:"rgba(0,0,0,.75)",color:"#FFD700",fontSize:8,fontWeight:800,borderRadius:4,padding:"1px 5px"}}>GL</div>
-      </div>
-    </div>
-  );
-}
 
 // ─── AuthScreen ───────────────────────────────────────────────────────────────
 function AuthScreen() {
