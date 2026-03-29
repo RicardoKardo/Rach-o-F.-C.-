@@ -15,7 +15,7 @@ const POSITIONS_LINE = [
 ];
 const POSITION_GK  = { id:"goleiro", label:"Goleiro", short:"GL", color:"#FFD700", emoji:"🧤" };
 const ALL_POS      = [POSITION_GK, ...POSITIONS_LINE];
-const POS          = Object.fromEntries(ALL_POS.map(p => [p.id, p]));
+const POS          = Objecot.fromEntries(ALL_POS.map(p => [p.id, p]));
 const FORMATIONS   = { 5:["fixo","ala","ala","meia","pivo"], 6:["fixo","fixo","ala","ala","meia","pivo"] };
 const PITCH_SLOTS  = {
   5:[{pos:"pivo",x:50,y:16},{pos:"ala",x:14,y:36},{pos:"ala",x:86,y:36},{pos:"meia",x:50,y:55},{pos:"fixo",x:50,y:74}],
@@ -564,28 +564,25 @@ function GroupApp({group, userId, plan, onBack, notify}) {
   }
 
   async function confirmParsed() {
-    if (!parsed) return;
-    setSaving(true);
-
-    // Salva no DB os jogadores marcados como 'roster'
+  if (!parsed) return;
+  setSaving(true);
+  try {
     const newDbPlayers = [];
     for (const r of parsed.lineResult) {
-      if (!r.matched && resolveMap[r.raw]==='roster') {
+      if (!r.matched && resolveMap[r.raw] === 'roster') {
         const np = {
-          id:          Date.now().toString()+Math.random().toString(36).slice(2),
-          name:        r.raw,
-          isGoalkeeper:false,
-          positions:   ["ala"],
-          aliases:     [],
-          foot:        'direita', side:'ambos',
-          fisico:2, defensivo:2, ofensivo:2,
+          id: Date.now().toString() + Math.random().toString(36).slice(2),
+          name: r.raw,
+          isGoalkeeper: false,
+          positions: ["ala"],
+          aliases: [],
+          foot: 'direita', side: 'ambos',
+          fisico: 2, defensivo: 2, ofensivo: 2,
         };
-        await upsertPlayer(np, gid, userId);
-        newDbPlayers.push(np);
+        try { await upsertPlayer(np, gid, userId); newDbPlayers.push(np); }
+        catch(e) { console.error('Erro ao salvar jogador:', r.raw, e); }
       }
     }
-
-    // Atualiza lista de players se adicionou novos
     let updatedPlayers = players;
     if (newDbPlayers.length > 0) {
       updatedPlayers = [...players, ...newDbPlayers];
@@ -593,27 +590,26 @@ function GroupApp({group, userId, plan, onBack, notify}) {
       await updateGroupCount(gid, updatedPlayers.length);
       onBack(updatedPlayers.length, gid);
     }
-
-    // Monta lista da semana com jogadores resolvidos
     const newLine = parsed.lineResult.map(r => {
       if (r.matched) return r.player;
-      const rp = newDbPlayers.find(p=>normName(p.name)===normName(r.raw));
-      if (rp) return rp; // Adicionado ao elenco
+      const rp = newDbPlayers.find(p => normName(p.name) === normName(r.raw));
+      if (rp) return rp;
       return { id:"av_"+Date.now()+Math.random(), name:r.raw, isGoalkeeper:false, positions:["ala"], foot:"direita", side:"ambos", fisico:2, defensivo:2, ofensivo:2, avulso:true };
     });
-    const newGK = parsed.gkResult.map(r=>r.player||{id:"gkav_"+Date.now()+Math.random(),name:r.raw,isGoalkeeper:true,avulso:true});
-
+    const newGK = parsed.gkResult.map(r => r.player || { id:"gkav_"+Date.now()+Math.random(), name:r.raw, isGoalkeeper:true, avulso:true });
     await saveWeekPlayers(gid, userId, newLine, newGK);
     setWeekLine(newLine); setWeekGK(newGK);
     setTeams(null); setAssignedGKs({});
     setParsed(null); setListText(""); setPasteOpen(false);
     setResolveMap({});
-
-    const rCount = newDbPlayers.length;
-    notify(`✓ ${newLine.length} jogadores${rCount>0?` · ${rCount} adicionado${rCount>1?"s":""} ao elenco`:""}`);
+    notify(`✓ ${newLine.length} jogadores confirmados!`);
+  } catch(e) {
+    console.error('Erro geral confirmParsed:', e);
+    notify("Erro ao salvar — tente novamente", "err");
+  } finally {
     setSaving(false);
   }
-
+  }
   async function clearWeek() {
     await clearWeekPlayers(gid);
     setWeekLine([]); setWeekGK([]);
