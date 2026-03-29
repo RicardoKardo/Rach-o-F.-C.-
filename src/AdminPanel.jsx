@@ -1,4 +1,11 @@
-import { useState, useEffect } from "react";
+-- Adicionar coluna is_admin na tabela profiles
+ALTER TABLE profiles ADD COLUMN is_admin BOOLEAN DEFAULT FALSE;
+
+-- Marcar como admin o usuário específico (substitua pelo ID real)
+UPDATE profiles SET is_admin = TRUE WHERE id = 'bf1b462c-16d3-41e2-9c75-de485cccd216';
+
+-- Criar índice para melhor performance
+CREATE INDEX idx_profiles_is_admin ON profiles(is_admin);import { useState, useEffect } from "react";
 import { supabase } from './lib/supabase.js';
 
 const ADMIN_ID = 'bf1b462c-16d3-41e2-9c75-de485cccd216';
