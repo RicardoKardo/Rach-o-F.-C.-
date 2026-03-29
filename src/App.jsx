@@ -321,7 +321,7 @@ onKeyDown={e=>e.key==='Enter'&&verifyOTP()} autoFocus/>
   
 
 function shareWhatsApp(teams, weekGK, assignedGKs) {
-  const ICONS = ["🤍","🖤","❤️","💙"];
+  const ICONS = ["🤍","🖤","❤️","💙"];}
   let text = "⚽ *RACHÃO FC — TIMES DE HOJE* ⚽\n\n";
   teams.forEach((team, i) => {
     const tc = TEAM_COLORS[i % TEAM_COLORS.length];
